@@ -31,7 +31,7 @@ export function PriceAnalysis({ analysis, neighborhood }: { analysis: Analysis; 
 
       <div
         className={`mt-4 flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium ${
-          isBelow ? "bg-accent-50 text-accent-700" : isAbove ? "bg-brand-50 text-brand-700" : "bg-ink-50 text-ink-600"
+          isBelow ? "bg-accent-50 text-accent-700" : isAbove ? "bg-amber-50 text-amber-700" : "bg-ink-50 text-ink-600"
         }`}
       >
         {isBelow ? (

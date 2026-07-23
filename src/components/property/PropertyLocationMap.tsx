@@ -9,7 +9,7 @@ const pinIcon = L.divIcon({
   className: "raiz-location-pin",
   html: `<div style="
     width:16px;height:16px;border-radius:50%;
-    background:#a1462c;border:3px solid white;
+    background:var(--color-brand-700);border:3px solid white;
     box-shadow:0 2px 6px rgba(0,0,0,0.4);
   "></div>`,
   iconSize: [16, 16],

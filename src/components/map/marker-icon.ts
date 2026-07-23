@@ -10,7 +10,7 @@ const MARKER_HEIGHT = 28;
  * the marker's HTML is safe.
  */
 export function createPriceMarkerIcon(label: string, isActive: boolean): L.DivIcon {
-  const background = isActive ? "#a1462c" : "#221912";
+  const background = isActive ? "var(--color-brand-700)" : "var(--color-ink-900)";
   return L.divIcon({
     className: "raiz-price-marker",
     html: `
