@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { navigation } from "@/config/site";
 import { HeaderSearchForm } from "./HeaderSearchForm";
+import { signOutAction } from "@/features/auth/actions";
 
-export function MobileNav() {
+export function MobileNav({ user }: { user: { name: string } | null }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,6 +38,54 @@ export function MobileNav() {
                   </Link>
                 </li>
               ))}
+
+              <li>
+                <hr className="my-2 border-ink-100" />
+              </li>
+
+              {user ? (
+                <>
+                  <li>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-base font-medium text-ink-800 hover:bg-ink-50"
+                    >
+                      Mis propiedades
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/account"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-base font-medium text-ink-800 hover:bg-ink-50"
+                    >
+                      Perfil ({user.name})
+                    </Link>
+                  </li>
+                  <li>
+                    <form action={signOutAction}>
+                      <button
+                        type="submit"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-base font-medium text-red-600 hover:bg-red-50"
+                      >
+                        <LogOut className="size-4" aria-hidden />
+                        Cerrar sesión
+                      </button>
+                    </form>
+                  </li>
+                </>
+              ) : (
+                <li>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg px-3 py-2.5 text-base font-medium text-ink-800 hover:bg-ink-50"
+                  >
+                    Iniciar sesión
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
         </div>

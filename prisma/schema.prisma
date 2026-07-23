@@ -68,6 +68,12 @@ model Property {
   agentId String?
   agent   Agent?  @relation(fields: [agentId], references: [id])
 
+  // The platform account that submitted/manages this listing. Nullable
+  // because the seeded demo catalog wasn't created by any registered user.
+  // Distinct from `agent`, which is just the contact shown on the listing.
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
   images    PropertyImage[]
   amenities PropertyAmenity[]
   leads     Lead[]
@@ -77,6 +83,7 @@ model Property {
   @@index([locality, neighborhood])
   @@index([propertyType])
   @@index([latitude, longitude])
+  @@index([ownerId])
 }
 
 model PropertyImage {
@@ -87,7 +94,27 @@ model PropertyImage {
   sortOrder  Int      @default(0)
   alt        String?
 
+  // Present only for user-uploaded photos, stored directly in Postgres so
+  // the MVP needs no external object storage (see PropertyImageService).
+  // Seed/placeholder images leave these null and only set `imageUrl`.
+  fileName  String?
+  mimeType  String?
+  fileSize  Int?
+  imageData Bytes?
+
   @@index([propertyId])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  properties Property[]
 }
 
 model Amenity {

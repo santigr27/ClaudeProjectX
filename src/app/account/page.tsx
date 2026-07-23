@@ -1,24 +1,55 @@
 import type { Metadata } from "next";
-import { UserRound } from "lucide-react";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { signOutAction } from "@/features/auth/actions";
+import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
-  title: "Mi cuenta",
+  title: "Mi perfil",
 };
 
 /**
- * Placeholder for the MVP. Session/auth is intentionally deferred (see
- * src/lib/session.ts for the anonymous session id used by favorites), but
- * the route exists so the header's account entry point has somewhere to go.
+ * Minimal profile page per the MVP scope: name, email, and an avatar
+ * fallback (initials). No editable account-management features yet —
+ * see the "My Properties" dashboard (/dashboard) for listing management.
  */
-export default function AccountPage() {
+export default async function AccountPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login?callbackUrl=/account");
+
+  const { name, email } = session.user;
+  const initials = (name ?? email ?? "U")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
-      <EmptyState
-        icon={<UserRound className="size-8" aria-hidden />}
-        title="Las cuentas llegarán pronto"
-        description="Muy pronto podrás crear una cuenta para guardar búsquedas, gestionar tus publicaciones y contactar agentes más rápido."
-      />
+    <div className="mx-auto max-w-md px-4 py-16 sm:px-6 lg:px-8">
+      <div className="flex flex-col items-center gap-4 rounded-2xl border border-ink-100 bg-white p-8 text-center shadow-sm">
+        <div className="flex size-16 items-center justify-center rounded-full bg-brand-600 text-xl font-semibold text-white">
+          {initials}
+        </div>
+        <div>
+          <p className="font-display text-xl font-semibold text-ink-900">{name}</p>
+          <p className="text-sm text-ink-500">{email}</p>
+        </div>
+
+        <div className="mt-2 flex w-full flex-col gap-2">
+          <Button href="/dashboard" fullWidth>
+            Ir a mis propiedades
+          </Button>
+          <form action={signOutAction} className="w-full">
+            <button
+              type="submit"
+              className="w-full rounded-full border border-ink-200 py-2.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

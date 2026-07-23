@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { Heart, UserRound } from "lucide-react";
+import { Heart } from "lucide-react";
 import { navigation } from "@/config/site";
+import { auth } from "@/lib/auth";
 import { Logo } from "./Logo";
 import { HeaderSearchForm } from "./HeaderSearchForm";
 import { MobileNav } from "./MobileNav";
+import { UserMenu } from "./UserMenu";
 
-export function Header() {
+export async function Header() {
+  const session = await auth();
+  const user = session?.user;
+
   return (
     <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/95 backdrop-blur-sm">
       <div className="relative mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
@@ -28,7 +33,7 @@ export function Header() {
 
         <HeaderSearchForm className="ml-auto hidden max-w-xs flex-1 lg:block" />
 
-        <div className="ml-auto flex items-center gap-1 md:ml-0">
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
           <Link
             href="/favorites"
             aria-label="Favoritos"
@@ -36,14 +41,21 @@ export function Header() {
           >
             <Heart className="size-5" aria-hidden />
           </Link>
-          <Link
-            href="/account"
-            aria-label="Mi cuenta"
-            className="hidden size-10 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100 sm:flex"
-          >
-            <UserRound className="size-5" aria-hidden />
-          </Link>
-          <MobileNav />
+
+          {user ? (
+            <div className="hidden sm:block">
+              <UserMenu name={user.name ?? user.email ?? "Cuenta"} />
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden rounded-full px-3.5 py-2 text-sm font-medium text-ink-700 hover:bg-ink-100 sm:block"
+            >
+              Iniciar sesión
+            </Link>
+          )}
+
+          <MobileNav user={user ? { name: user.name ?? user.email ?? "Cuenta" } : null} />
         </div>
       </div>
     </header>
