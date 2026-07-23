@@ -51,6 +51,16 @@ function buildWhere(filters: PropertyFilters): Prisma.PropertyWhereInput {
     where.longitude = { gte: filters.bbox.west, lte: filters.bbox.east };
   }
 
+  if (filters.q?.trim()) {
+    const query = filters.q.trim();
+    where.OR = [
+      { title: { contains: query, mode: "insensitive" } },
+      { address: { contains: query, mode: "insensitive" } },
+      { neighborhood: { contains: query, mode: "insensitive" } },
+      { locality: { contains: query, mode: "insensitive" } },
+    ];
+  }
+
   return where;
 }
 
@@ -153,4 +163,35 @@ export async function listDistinctLocalities(): Promise<string[]> {
     orderBy: { locality: "asc" },
   });
   return rows.map((row) => row.locality);
+}
+
+export interface LocalityWithNeighborhoods {
+  locality: string;
+  neighborhoods: string[];
+}
+
+/**
+ * Distinct locality/neighborhood pairs actually present in published
+ * listings, used to populate the /properties filter dropdowns so they
+ * never offer a combination with zero results.
+ */
+export async function listDistinctLocalitiesWithNeighborhoods(): Promise<LocalityWithNeighborhoods[]> {
+  const rows = await prisma.property.findMany({
+    where: { status: "PUBLISHED" },
+    select: { locality: true, neighborhood: true },
+    distinct: ["locality", "neighborhood"],
+    orderBy: [{ locality: "asc" }, { neighborhood: "asc" }],
+  });
+
+  const byLocality = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = byLocality.get(row.locality) ?? [];
+    list.push(row.neighborhood);
+    byLocality.set(row.locality, list);
+  }
+
+  return Array.from(byLocality.entries()).map(([locality, neighborhoods]) => ({
+    locality,
+    neighborhoods,
+  }));
 }

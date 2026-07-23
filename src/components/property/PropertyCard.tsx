@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BedDouble, Bath, Car, Ruler } from "lucide-react";
+import { clsx } from "clsx";
 import { Badge } from "@/components/ui/Badge";
 import { FavoriteButton } from "./FavoriteButton";
 import {
@@ -14,16 +15,27 @@ import type { PropertySummary } from "@/types/property";
 export function PropertyCard({
   property,
   initialFavorited = false,
+  highlighted = false,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   property: PropertySummary;
   initialFavorited?: boolean;
+  highlighted?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }) {
   const pricePerSqm = property.price / property.areaSqm;
 
   return (
     <Link
       href={`/properties/${property.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-ink-100 bg-white transition-shadow hover:shadow-lg"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={clsx(
+        "group flex flex-col overflow-hidden rounded-2xl border bg-white transition-shadow hover:shadow-lg",
+        highlighted ? "border-brand-500 ring-2 ring-brand-500/30" : "border-ink-100",
+      )}
     >
       <div className="relative aspect-4/3 w-full overflow-hidden bg-ink-100">
         {property.coverImageUrl ? (

@@ -2,6 +2,7 @@ import {
   findFeaturedProperties,
   findPropertyBySlug,
   findProperties,
+  listDistinctLocalitiesWithNeighborhoods,
 } from "@/repositories/property.repository";
 import type { PropertySearchParams } from "@/validations/property-filters";
 import type { PropertyFilters, PropertyType } from "@/types/property";
@@ -36,6 +37,7 @@ export function toPropertyFilters(params: PropertySearchParams): PropertyFilters
     bathrooms: params.bathrooms,
     parkingSpaces: params.parkingSpaces,
     sort: params.sort,
+    q: params.q,
     page: params.page,
     pageSize: searchConfig.pageSize,
     bbox:
@@ -58,4 +60,8 @@ export async function getPropertyDetail(slug: string) {
 
 export async function getFeaturedProperties(limit?: number) {
   return findFeaturedProperties(limit);
+}
+
+export async function getPropertyFilterOptions() {
+  return listDistinctLocalitiesWithNeighborhoods();
 }

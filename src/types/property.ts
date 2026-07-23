@@ -48,6 +48,7 @@ export interface PropertyFilters {
   bathrooms?: number;
   parkingSpaces?: number;
   bbox?: { north: number; south: number; east: number; west: number };
+  q?: string;
   page?: number;
   pageSize?: number;
   sort?: PropertySort;
