@@ -1,0 +1,161 @@
+// Prisma schema for the Bogotá real estate marketplace MVP.
+// See docs/architecture.md for an overview of how these models are used.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ListingType {
+  SALE
+  RENT
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  STUDIO
+  PENTHOUSE
+  COMMERCIAL
+  LOT
+}
+
+enum PropertyStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CLOSED
+  DISCARDED
+}
+
+model Property {
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  title             String
+  description       String
+  listingType       ListingType
+  propertyType      PropertyType
+  price             Float
+  administrationFee Float?
+  areaSqm           Float
+  bedrooms          Int
+  bathrooms         Int
+  parkingSpaces     Int            @default(0)
+  estrato           Int?
+  floor             Int?
+  propertyAge       Int?
+  address           String
+  locality          String
+  neighborhood      String
+  latitude          Float
+  longitude         Float
+  status            PropertyStatus @default(PUBLISHED)
+  featured          Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  images    PropertyImage[]
+  amenities PropertyAmenity[]
+  leads     Lead[]
+  favorites Favorite[]
+
+  @@index([listingType, status])
+  @@index([locality, neighborhood])
+  @@index([propertyType])
+  @@index([latitude, longitude])
+}
+
+model PropertyImage {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  imageUrl   String
+  sortOrder  Int      @default(0)
+  alt        String?
+
+  @@index([propertyId])
+}
+
+model Amenity {
+  id         String            @id @default(cuid())
+  name       String            @unique
+  properties PropertyAmenity[]
+}
+
+model PropertyAmenity {
+  propertyId String
+  amenityId  String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  amenity    Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, amenityId])
+}
+
+model Agent {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  whatsapp  String?
+  imageUrl  String?
+  title     String?
+  createdAt DateTime @default(now())
+
+  properties Property[]
+  leads      Lead[]
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  propertyId String?
+  property   Property?  @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  agentId    String?
+  agent      Agent?     @relation(fields: [agentId], references: [id])
+  name       String
+  email      String
+  phone      String?
+  message    String
+  status     LeadStatus @default(NEW)
+  createdAt  DateTime   @default(now())
+
+  @@index([propertyId])
+  @@index([status])
+}
+
+// Mock/demo market data used to power the valuation estimator.
+// Intended to be replaced by a real comparable-sales dataset or external API.
+model NeighborhoodMarketData {
+  id              String   @id @default(cuid())
+  locality        String
+  neighborhood    String
+  salePricePerSqm Float
+  rentPricePerSqm Float
+  updatedAt       DateTime @updatedAt
+
+  @@unique([locality, neighborhood])
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  sessionId  String
+  createdAt  DateTime @default(now())
+
+  @@unique([propertyId, sessionId])
+  @@index([sessionId])
+}
