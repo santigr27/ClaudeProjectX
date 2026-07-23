@@ -25,13 +25,9 @@ async function findOrCreateAgentForSubmission(input: SellPropertyInput) {
   });
 }
 
-export async function createPropertySubmission(input: SellPropertyInput, ownerId: string) {
-  const agent = await findOrCreateAgentForSubmission(input);
-  const baseSlug = slugify(`${input.title}-${input.neighborhood}-${Math.round(input.areaSqm)}m2`);
-  const slug = `${baseSlug}-${Date.now().toString(36)}`;
-
-  const amenityRecords = await Promise.all(
-    input.amenities.map((name) =>
+async function resolveAmenityIds(names: string[]): Promise<string[]> {
+  const amenities = await Promise.all(
+    names.map((name) =>
       prisma.amenity.upsert({
         where: { name },
         update: {},
@@ -39,6 +35,14 @@ export async function createPropertySubmission(input: SellPropertyInput, ownerId
       }),
     ),
   );
+  return amenities.map((amenity) => amenity.id);
+}
+
+export async function createPropertySubmission(input: SellPropertyInput, ownerId: string) {
+  const agent = await findOrCreateAgentForSubmission(input);
+  const baseSlug = slugify(`${input.title}-${input.neighborhood}-${Math.round(input.areaSqm)}m2`);
+  const slug = `${baseSlug}-${Date.now().toString(36)}`;
+  const amenityIds = await resolveAmenityIds(input.amenities);
 
   return prisma.property.create({
     data: {
@@ -74,7 +78,59 @@ export async function createPropertySubmission(input: SellPropertyInput, ownerId
         create: input.images.map((imageUrl, index) => ({ imageUrl, sortOrder: index })),
       },
       amenities: {
-        create: amenityRecords.map((amenity) => ({ amenityId: amenity.id })),
+        create: amenityIds.map((amenityId) => ({ amenityId })),
+      },
+    },
+  });
+}
+
+/**
+ * Updates a property the caller already verified belongs to `ownerId`
+ * (see repositories/property.repository.ts#findOwnedPropertyById). Fields
+ * that aren't part of the sell form (status, ownerId, agentId, slug,
+ * coordinates) are intentionally left untouched — editing a listing never
+ * changes who owns it or its moderation status.
+ */
+export async function updateOwnedPropertySubmission(
+  id: string,
+  ownerId: string,
+  input: SellPropertyInput,
+) {
+  const property = await prisma.property.findFirst({ where: { id, ownerId }, select: { id: true } });
+  if (!property) return null;
+
+  const amenityIds = await resolveAmenityIds(input.amenities);
+
+  return prisma.property.update({
+    where: { id },
+    data: {
+      title: input.title,
+      description: input.description,
+      listingType: input.listingType === "sale" ? "SALE" : "RENT",
+      propertyType: input.propertyType.toUpperCase() as
+        | "APARTMENT"
+        | "HOUSE"
+        | "STUDIO"
+        | "PENTHOUSE"
+        | "COMMERCIAL"
+        | "LOT",
+      price: input.price,
+      administrationFee: input.administrationFee ?? null,
+      areaSqm: input.areaSqm,
+      bedrooms: input.bedrooms,
+      bathrooms: input.bathrooms,
+      parkingSpaces: input.parkingSpaces,
+      estrato: input.estrato ?? null,
+      address: input.address,
+      locality: input.locality,
+      neighborhood: input.neighborhood,
+      images: {
+        deleteMany: {},
+        create: input.images.map((imageUrl, index) => ({ imageUrl, sortOrder: index })),
+      },
+      amenities: {
+        deleteMany: {},
+        create: amenityIds.map((amenityId) => ({ amenityId })),
       },
     },
   });

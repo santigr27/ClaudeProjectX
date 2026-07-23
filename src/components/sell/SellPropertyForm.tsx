@@ -7,7 +7,11 @@ import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ImageUrlListInput } from "./ImageUrlListInput";
-import { submitPropertyAction, type SellActionState } from "@/features/sell/actions";
+import {
+  submitPropertyAction,
+  updatePropertyAction,
+  type SellActionState,
+} from "@/features/sell/actions";
 import { amenityCatalog, propertyTypeLabels } from "@/config/site";
 import type { LocalityOption } from "@/repositories/market-data.repository";
 
@@ -25,8 +29,22 @@ function asString(value: string | string[] | undefined, fallback = ""): string {
   return value ?? fallback;
 }
 
-export function SellPropertyForm({ localities }: { localities: LocalityOption[] }) {
-  const [state, formAction, isPending] = useActionState(submitPropertyAction, initialState);
+export function SellPropertyForm({
+  localities,
+  mode = "create",
+  propertyId,
+  initialValues,
+}: {
+  localities: LocalityOption[];
+  mode?: "create" | "edit";
+  propertyId?: string;
+  /** Prefills the form on first render when editing an existing property.
+   * Once a submission happens, `state.values` (echoed back by the action)
+   * takes over so a validation error doesn't wipe what the user typed. */
+  initialValues?: Record<string, string | string[]>;
+}) {
+  const action = mode === "edit" ? updatePropertyAction : submitPropertyAction;
+  const [state, formAction, isPending] = useActionState(action, initialState);
 
   // Same pattern as the valuation calculator: a Server Action submission
   // can force this form to remount, so re-derive every default from the
@@ -38,7 +56,7 @@ export function SellPropertyForm({ localities }: { localities: LocalityOption[] 
     setSubmissionId((id) => id + 1);
   }
 
-  const values = state.values;
+  const values = state.values ?? initialValues;
   const [listingType, setListingType] = useState(() => asString(values?.listingType, "sale"));
   const [locality, setLocality] = useState(() => asString(values?.locality));
 
@@ -51,14 +69,15 @@ export function SellPropertyForm({ localities }: { localities: LocalityOption[] 
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-accent-100 bg-accent-50 px-6 py-16 text-center">
         <CheckCircle2 className="size-10 text-accent-600" aria-hidden />
         <h2 className="font-display text-2xl font-semibold text-ink-900">
-          ¡Tu propiedad fue enviada para revisión!
+          {mode === "edit" ? "¡Cambios guardados!" : "¡Tu propiedad fue enviada para revisión!"}
         </h2>
         <p className="max-w-md text-ink-600">
-          Nuestro equipo revisará la información en las próximas horas. Te contactaremos por correo
-          cuando tu publicación esté activa.
+          {mode === "edit"
+            ? "Actualizamos la información de tu propiedad."
+            : "Nuestro equipo revisará la información en las próximas horas. Te contactaremos por correo cuando tu publicación esté activa."}
         </p>
-        <Button href="/" variant="outline">
-          Volver al inicio
+        <Button href="/dashboard" variant="outline">
+          Ir a mis propiedades
         </Button>
       </div>
     );
@@ -71,6 +90,7 @@ export function SellPropertyForm({ localities }: { localities: LocalityOption[] 
 
   return (
     <form key={submissionId} action={formAction} className="flex flex-col gap-8">
+      {propertyId && <input type="hidden" name="propertyId" value={propertyId} />}
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-xl font-semibold text-ink-900">Tipo de propiedad</h2>
         <input type="hidden" name="listingType" value={listingType} />
@@ -272,10 +292,12 @@ export function SellPropertyForm({ localities }: { localities: LocalityOption[] 
 
       <div className="flex items-center justify-between gap-4">
         <p className="text-xs text-ink-500">
-          Al publicar aceptas que la información será revisada antes de aparecer en el sitio.
+          {mode === "edit"
+            ? "Los datos de contacto no se actualizan desde este formulario."
+            : "Al publicar aceptas que la información será revisada antes de aparecer en el sitio."}
         </p>
         <Button type="submit" size="lg" disabled={isPending}>
-          {isPending ? "Enviando..." : "Publicar propiedad"}
+          {isPending ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Publicar propiedad"}
         </Button>
       </div>
     </form>
