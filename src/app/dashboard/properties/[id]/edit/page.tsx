@@ -43,7 +43,6 @@ export default async function EditPropertyPage({
     administrationFee: property.administrationFee ? String(property.administrationFee) : "",
     description: property.description,
     amenities: property.amenities.map((item) => item.amenity.name),
-    images: property.images.map((image) => image.imageUrl),
     contactName: property.agent?.name ?? "",
     contactEmail: property.agent?.email ?? "",
     contactPhone: property.agent?.phone ?? "",
@@ -61,6 +60,7 @@ export default async function EditPropertyPage({
         mode="edit"
         propertyId={property.id}
         initialValues={initialValues}
+        existingImages={property.images.map((image) => ({ id: image.id, imageUrl: image.imageUrl }))}
       />
     </div>
   );

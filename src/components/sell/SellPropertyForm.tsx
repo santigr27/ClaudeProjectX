@@ -6,7 +6,7 @@ import { CheckCircle2 } from "lucide-react";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
-import { ImageUrlListInput } from "./ImageUrlListInput";
+import { ImageUploadInput } from "./ImageUploadInput";
 import {
   submitPropertyAction,
   updatePropertyAction,
@@ -34,6 +34,7 @@ export function SellPropertyForm({
   mode = "create",
   propertyId,
   initialValues,
+  existingImages,
 }: {
   localities: LocalityOption[];
   mode?: "create" | "edit";
@@ -42,6 +43,8 @@ export function SellPropertyForm({
    * Once a submission happens, `state.values` (echoed back by the action)
    * takes over so a validation error doesn't wipe what the user typed. */
   initialValues?: Record<string, string | string[]>;
+  /** Existing photos (edit mode only) shown read-only above the uploader. */
+  existingImages?: { id: string; imageUrl: string }[];
 }) {
   const action = mode === "edit" ? updatePropertyAction : submitPropertyAction;
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -86,7 +89,6 @@ export function SellPropertyForm({
   const selectedAmenities = new Set(
     Array.isArray(values?.amenities) ? values.amenities : values?.amenities ? [values.amenities] : [],
   );
-  const imageValues = Array.isArray(values?.images) ? values.images : values?.images ? [values.images] : [];
 
   return (
     <form key={submissionId} action={formAction} className="flex flex-col gap-8">
@@ -251,10 +253,12 @@ export function SellPropertyForm({
 
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-xl font-semibold text-ink-900">Fotos</h2>
-        <p className="text-sm text-ink-500">
-          Agrega enlaces a las fotos de tu propiedad. Próximamente podrás subir imágenes directamente.
-        </p>
-        <ImageUrlListInput initialValues={imageValues} />
+        <ImageUploadInput existingImages={existingImages} />
+        {state.fieldErrors?.images && (
+          <p role="alert" className="text-sm text-red-600">
+            {state.fieldErrors.images}
+          </p>
+        )}
       </section>
 
       <section className="flex flex-col gap-4">

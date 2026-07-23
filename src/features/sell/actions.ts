@@ -5,6 +5,8 @@ import {
   createPropertySubmission,
   updateOwnedPropertySubmission,
 } from "@/repositories/property-submission.repository";
+import { countImagesByPropertyId } from "@/repositories/property-image.repository";
+import { assertCanAddImages, saveImage, InvalidImageError } from "@/services/property-image.service";
 import { sellPropertySchema, type SellPropertyInput } from "@/validations/sell";
 
 export interface SellActionState {
@@ -14,7 +16,8 @@ export interface SellActionState {
   formError?: string;
   /** Echoes back the raw submitted values so the form can restore them
    * after a validation error instead of reverting every uncontrolled
-   * field to its original default. */
+   * field to its original default. Never includes files — browsers won't
+   * let a file input's value be restored programmatically anyway. */
   values?: Record<string, string | string[]>;
 }
 
@@ -24,15 +27,10 @@ type ParsedSellForm =
 
 function parseSellFormData(formData: FormData): ParsedSellForm {
   const amenities = formData.getAll("amenities").map(String);
-  const images = formData
-    .getAll("images")
-    .map(String)
-    .filter((value) => value.trim().length > 0);
 
   const raw: Record<string, unknown> = {
     ...Object.fromEntries(formData.entries()),
     amenities,
-    images,
   };
 
   // Optional numeric fields arrive as "" when left blank; Number("") coerces
@@ -43,7 +41,13 @@ function parseSellFormData(formData: FormData): ParsedSellForm {
   }
 
   const parsed = sellPropertySchema.safeParse(raw);
-  const values = raw as Record<string, string | string[]>;
+
+  // The raw entries include any File objects from the image input, which
+  // can't be serialized back into `values` (and shouldn't be — file inputs
+  // never restore programmatically). Strip them before echoing.
+  const values = Object.fromEntries(
+    Object.entries(raw).filter(([, value]) => !(value instanceof File)),
+  ) as Record<string, string | string[]>;
 
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -55,6 +59,12 @@ function parseSellFormData(formData: FormData): ParsedSellForm {
   }
 
   return { success: true, data: parsed.data };
+}
+
+function extractImageFiles(formData: FormData): File[] {
+  return formData
+    .getAll("imageFiles")
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
 }
 
 export async function submitPropertyAction(
@@ -72,14 +82,25 @@ export async function submitPropertyAction(
   const parsed = parseSellFormData(formData);
   if (!parsed.success) return parsed.state;
 
+  const imageFiles = extractImageFiles(formData);
+
+  try {
+    // Validate every photo before writing anything, so a bad file never
+    // leaves a property with only some of its photos saved.
+    await assertCanAddImages(null, imageFiles);
+  } catch (error) {
+    if (error instanceof InvalidImageError) {
+      return { fieldErrors: { images: error.message } };
+    }
+    throw error;
+  }
+
   try {
     const property = await createPropertySubmission(parsed.data, session.user.id);
+    await Promise.all(imageFiles.map((file, index) => saveImage(property.id, file, index)));
     return { success: true, slug: property.slug };
   } catch {
-    return {
-      formError: "No pudimos enviar tu publicación. Inténtalo de nuevo.",
-      values: Object.fromEntries(formData.entries()) as Record<string, string>,
-    };
+    return { formError: "No pudimos enviar tu publicación. Inténtalo de nuevo." };
   }
 }
 
@@ -100,6 +121,17 @@ export async function updatePropertyAction(
   const parsed = parseSellFormData(formData);
   if (!parsed.success) return parsed.state;
 
+  const imageFiles = extractImageFiles(formData);
+
+  try {
+    await assertCanAddImages(propertyId, imageFiles);
+  } catch (error) {
+    if (error instanceof InvalidImageError) {
+      return { fieldErrors: { images: error.message } };
+    }
+    throw error;
+  }
+
   try {
     const property = await updateOwnedPropertySubmission(propertyId, session.user.id, parsed.data);
     if (!property) {
@@ -107,6 +139,12 @@ export async function updatePropertyAction(
       // same message either way so we don't leak which id exists.
       return { formError: "No tienes permiso para editar esta propiedad." };
     }
+
+    const existingImageCount = await countImagesByPropertyId(propertyId);
+    await Promise.all(
+      imageFiles.map((file, index) => saveImage(property.id, file, existingImageCount + index)),
+    );
+
     return { success: true, slug: property.slug };
   } catch {
     return { formError: "No pudimos guardar los cambios. Inténtalo de nuevo." };

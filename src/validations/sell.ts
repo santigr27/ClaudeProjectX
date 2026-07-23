@@ -23,7 +23,6 @@ export const sellPropertySchema = z.object({
   administrationFee: z.coerce.number().nonnegative().optional(),
   estrato: z.coerce.number().int().min(1).max(6).optional(),
   amenities: z.array(z.string()).default([]),
-  images: z.array(z.string()).default([]),
   contactName: z.string().trim().min(2, "Ingresa tu nombre"),
   contactEmail: z.email("Ingresa un correo válido"),
   contactPhone: z

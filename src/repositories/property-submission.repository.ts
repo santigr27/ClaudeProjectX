@@ -38,6 +38,12 @@ async function resolveAmenityIds(names: string[]): Promise<string[]> {
   return amenities.map((amenity) => amenity.id);
 }
 
+/**
+ * Creates the property row itself. Photos are handled separately by the
+ * caller via services/property-image.service.ts — uploaded files need to
+ * be validated and persisted independently of this scalar-field write
+ * (see features/sell/actions.ts).
+ */
 export async function createPropertySubmission(input: SellPropertyInput, ownerId: string) {
   const agent = await findOrCreateAgentForSubmission(input);
   const baseSlug = slugify(`${input.title}-${input.neighborhood}-${Math.round(input.areaSqm)}m2`);
@@ -74,9 +80,6 @@ export async function createPropertySubmission(input: SellPropertyInput, ownerId
       status: "PENDING_REVIEW",
       agentId: agent.id,
       ownerId,
-      images: {
-        create: input.images.map((imageUrl, index) => ({ imageUrl, sortOrder: index })),
-      },
       amenities: {
         create: amenityIds.map((amenityId) => ({ amenityId })),
       },
@@ -124,10 +127,6 @@ export async function updateOwnedPropertySubmission(
       address: input.address,
       locality: input.locality,
       neighborhood: input.neighborhood,
-      images: {
-        deleteMany: {},
-        create: input.images.map((imageUrl, index) => ({ imageUrl, sortOrder: index })),
-      },
       amenities: {
         deleteMany: {},
         create: amenityIds.map((amenityId) => ({ amenityId })),
