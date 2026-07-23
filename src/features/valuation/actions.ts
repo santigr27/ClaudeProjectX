@@ -1,11 +1,14 @@
 "use server";
 
 import { estimatePropertyValue, ValuationDataUnavailableError } from "@/services/valuation.service";
-import { valuationInputSchema } from "@/validations/valuation";
+import { valuationInputSchema, type ValuationInput } from "@/validations/valuation";
 import type { ValuationResult } from "@/services/valuation.service";
 
 export interface ValuationActionState {
   result?: ValuationResult;
+  /** Echoes back the last submitted (parsed) input so the form can restore
+   * its fields to what was actually submitted after a server round-trip. */
+  submittedInput?: ValuationInput;
   fieldErrors?: Record<string, string>;
   formError?: string;
 }
@@ -28,14 +31,18 @@ export async function estimateValuationAction(
 
   try {
     const result = await estimatePropertyValue(parsed.data);
-    return { result };
+    return { result, submittedInput: parsed.data };
   } catch (error) {
     if (error instanceof ValuationDataUnavailableError) {
       return {
+        submittedInput: parsed.data,
         formError:
           "Todavía no tenemos datos de mercado para ese barrio. Intenta con otro barrio cercano.",
       };
     }
-    return { formError: "No pudimos calcular el estimado. Inténtalo de nuevo." };
+    return {
+      submittedInput: parsed.data,
+      formError: "No pudimos calcular el estimado. Inténtalo de nuevo.",
+    };
   }
 }

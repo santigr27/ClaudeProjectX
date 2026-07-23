@@ -1,26 +1,60 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbf9f6;
+  --foreground: #221912;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-fraunces);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Brand: warm terracotta, evoking Bogotá clay-tile roofs and brick facades. */
+  --color-brand-50: #fbf3ee;
+  --color-brand-100: #f5e2d6;
+  --color-brand-200: #e9c3ac;
+  --color-brand-300: #dba17e;
+  --color-brand-400: #cc7e52;
+  --color-brand-500: #bb5a3c;
+  --color-brand-600: #a1462c;
+  --color-brand-700: #833823;
+  --color-brand-800: #692d1d;
+  --color-brand-900: #4e2216;
+
+  /* Accent: deep forest green for secondary actions and success states. */
+  --color-accent-50: #eef5f1;
+  --color-accent-100: #d3e7dc;
+  --color-accent-200: #a8cfb8;
+  --color-accent-300: #7ab595;
+  --color-accent-400: #4f9873;
+  --color-accent-500: #2f7d57;
+  --color-accent-600: #256345;
+  --color-accent-700: #1e4f38;
+  --color-accent-800: #163b2a;
+  --color-accent-900: #0f291d;
+
+  /* Ink: warm neutrals used for text and hairlines instead of pure gray. */
+  --color-ink-50: #f7f5f2;
+  --color-ink-100: #ece7e1;
+  --color-ink-200: #d9d0c5;
+  --color-ink-300: #bdaf9c;
+  --color-ink-400: #948572;
+  --color-ink-500: #6f6152;
+  --color-ink-600: #574b3f;
+  --color-ink-700: #443a31;
+  --color-ink-800: #322a24;
+  --color-ink-900: #221912;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-ink-200);
+  }
 }

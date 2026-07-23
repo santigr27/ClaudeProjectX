@@ -217,7 +217,7 @@ async function main() {
         data: {
           ...agent,
           whatsapp: agent.phone,
-          imageUrl: `https://i.pravatar.cc/300?img=${(index % 70) + 1}`,
+          imageUrl: `/placeholders/agent-${index % 6}.png`,
           title: "Asesor inmobiliario",
         },
       }),
@@ -320,7 +320,7 @@ async function main() {
           agentId: agent.id,
           images: {
             create: Array.from({ length: imageCount }, (_, imageIndex) => ({
-              imageUrl: `https://picsum.photos/seed/${slug}-${imageIndex}/1200/800`,
+              imageUrl: `/placeholders/property-${(propertyIndex * 3 + imageIndex) % 12}.png`,
               sortOrder: imageIndex,
               alt: `${title} - foto ${imageIndex + 1}`,
             })),
