@@ -1,4 +1,5 @@
 import { findMarketData } from "@/repositories/market-data.repository";
+import { calculatePricePerSqm } from "@/lib/property-math";
 import type { ValuationInput } from "@/validations/valuation";
 
 export interface ValuationResult {
@@ -95,7 +96,7 @@ export async function comparePriceToNeighborhoodAverage(params: {
   const marketData = await findMarketData(params.locality, params.neighborhood);
   if (!marketData || params.areaSqm <= 0) return null;
 
-  const propertyPricePerSqm = params.price / params.areaSqm;
+  const propertyPricePerSqm = calculatePricePerSqm(params.price, params.areaSqm);
   const neighborhoodAveragePricePerSqm =
     params.listingType === "sale" ? marketData.salePricePerSqm : marketData.rentPricePerSqm;
 

@@ -10,22 +10,26 @@ import {
   formatCompactRentPerMonth,
 } from "@/lib/currency";
 import { propertyTypeLabels } from "@/config/site";
+import { calculatePricePerSqm } from "@/lib/property-math";
 import type { PropertySummary } from "@/types/property";
 
 export function PropertyCard({
   property,
   initialFavorited = false,
   highlighted = false,
+  priority = false,
   onMouseEnter,
   onMouseLeave,
 }: {
   property: PropertySummary;
   initialFavorited?: boolean;
   highlighted?: boolean;
+  /** Set for the first card(s) above the fold to help LCP; leave the default off elsewhere. */
+  priority?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
-  const pricePerSqm = property.price / property.areaSqm;
+  const pricePerSqm = calculatePricePerSqm(property.price, property.areaSqm);
 
   return (
     <Link
@@ -43,6 +47,7 @@ export function PropertyCard({
             src={property.coverImageUrl}
             alt={property.title}
             fill
+            priority={priority}
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />

@@ -99,12 +99,13 @@ export function PropertySearchExperience({
             />
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {properties.map((property) => (
+              {properties.map((property, index) => (
                 <PropertyCard
                   key={property.id}
                   property={property}
                   initialFavorited={favoritedIds.has(property.id)}
                   highlighted={property.id === selectedId}
+                  priority={index === 0}
                   onMouseEnter={() => setSelectedId(property.id)}
                   onMouseLeave={() => setSelectedId(null)}
                 />

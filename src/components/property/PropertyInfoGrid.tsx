@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { formatCOP, formatPricePerSqm } from "@/lib/currency";
+import { calculatePricePerSqm } from "@/lib/property-math";
 import type { PropertyWithRelations } from "@/types/property";
 
 function InfoItem({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -28,7 +29,7 @@ function InfoItem({ icon, label, value }: { icon: ReactNode; label: string; valu
 }
 
 export function PropertyInfoGrid({ property }: { property: PropertyWithRelations }) {
-  const pricePerSqm = property.price / property.areaSqm;
+  const pricePerSqm = calculatePricePerSqm(property.price, property.areaSqm);
 
   const items: { icon: ReactNode; label: string; value: string }[] = [
     { icon: <Ruler className="size-4" aria-hidden />, label: "Área", value: `${property.areaSqm} m²` },

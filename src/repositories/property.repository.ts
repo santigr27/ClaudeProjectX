@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { calculatePricePerSqm } from "@/lib/property-math";
 import type {
   PropertyFilters,
   PropertySummary,
@@ -17,7 +18,7 @@ const SORT_TO_ORDER_BY: Record<
   price_per_sqm_asc: [{ price: "asc" }], // refined below with in-memory sort (price/area ratio has no DB column)
 };
 
-function buildWhere(filters: PropertyFilters): Prisma.PropertyWhereInput {
+export function buildWhere(filters: PropertyFilters): Prisma.PropertyWhereInput {
   const where: Prisma.PropertyWhereInput = {
     status: "PUBLISHED",
   };
@@ -110,7 +111,7 @@ export async function findProperties(filters: PropertyFilters) {
 
   if (sort === "price_per_sqm_asc") {
     summaries = summaries
-      .sort((a, b) => a.price / a.areaSqm - b.price / b.areaSqm)
+      .sort((a, b) => calculatePricePerSqm(a.price, a.areaSqm) - calculatePricePerSqm(b.price, b.areaSqm))
       .slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
   }
 
