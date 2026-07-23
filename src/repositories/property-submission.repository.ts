@@ -25,7 +25,7 @@ async function findOrCreateAgentForSubmission(input: SellPropertyInput) {
   });
 }
 
-export async function createPropertySubmission(input: SellPropertyInput) {
+export async function createPropertySubmission(input: SellPropertyInput, ownerId: string) {
   const agent = await findOrCreateAgentForSubmission(input);
   const baseSlug = slugify(`${input.title}-${input.neighborhood}-${Math.round(input.areaSqm)}m2`);
   const slug = `${baseSlug}-${Date.now().toString(36)}`;
@@ -69,6 +69,7 @@ export async function createPropertySubmission(input: SellPropertyInput) {
       longitude: -74.1,
       status: "PENDING_REVIEW",
       agentId: agent.id,
+      ownerId,
       images: {
         create: input.images.map((imageUrl, index) => ({ imageUrl, sortOrder: index })),
       },

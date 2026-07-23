@@ -166,6 +166,73 @@ export async function listDistinctLocalities(): Promise<string[]> {
   return rows.map((row) => row.locality);
 }
 
+export interface OwnerPropertySummary {
+  id: string;
+  slug: string;
+  title: string;
+  listingType: PropertySummary["listingType"];
+  status: Prisma.PropertyGetPayload<{ select: { status: true } }>["status"];
+  price: number;
+  neighborhood: string;
+  createdAt: Date;
+  coverImageUrl: string | null;
+}
+
+/** All of a user's own listings, any status — powers /dashboard. Never
+ * exposed to other users; callers must pass the authenticated user's id. */
+export async function findPropertiesByOwner(ownerId: string): Promise<OwnerPropertySummary[]> {
+  const rows = await prisma.property.findMany({
+    where: { ownerId },
+    include: { images: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return rows.map((property) => {
+    const cover = [...property.images].sort((a, b) => a.sortOrder - b.sortOrder)[0];
+    return {
+      id: property.id,
+      slug: property.slug,
+      title: property.title,
+      listingType: property.listingType,
+      status: property.status,
+      price: property.price,
+      neighborhood: property.neighborhood,
+      createdAt: property.createdAt,
+      coverImageUrl: cover?.imageUrl ?? null,
+    };
+  });
+}
+
+export async function countPropertiesByOwnerAndStatus(
+  ownerId: string,
+): Promise<Record<"PUBLISHED" | "PENDING_REVIEW" | "DRAFT" | "REJECTED", number>> {
+  const rows = await prisma.property.groupBy({
+    by: ["status"],
+    where: { ownerId },
+    _count: true,
+  });
+
+  const counts = { PUBLISHED: 0, PENDING_REVIEW: 0, DRAFT: 0, REJECTED: 0 };
+  for (const row of rows) {
+    counts[row.status] = row._count;
+  }
+  return counts;
+}
+
+/** Fetches a property for the edit flow, scoped to its owner — returns
+ * null both when the property doesn't exist AND when it belongs to
+ * someone else, so callers can't distinguish "not found" from "not
+ * yours" and leak which ids exist. */
+export async function findOwnedPropertyById(id: string, ownerId: string) {
+  return prisma.property.findFirst({
+    where: { id, ownerId },
+    include: {
+      images: { orderBy: { sortOrder: "asc" } },
+      amenities: { include: { amenity: true } },
+    },
+  });
+}
+
 export interface LocalityWithNeighborhoods {
   locality: string;
   neighborhoods: string[];

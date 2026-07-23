@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import { createPropertySubmission } from "@/repositories/property-submission.repository";
 import { sellPropertySchema } from "@/validations/sell";
 
@@ -18,6 +19,14 @@ export async function submitPropertyAction(
   _prevState: SellActionState,
   formData: FormData,
 ): Promise<SellActionState> {
+  // The route is already gated by proxy.ts, but never trust that alone for
+  // a write that assigns ownership — resolve the session server-side here
+  // too, and never accept an ownerId from the client.
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { formError: "Debes iniciar sesión para publicar una propiedad." };
+  }
+
   const amenities = formData.getAll("amenities").map(String);
   const images = formData
     .getAll("images")
@@ -49,7 +58,7 @@ export async function submitPropertyAction(
   }
 
   try {
-    const property = await createPropertySubmission(parsed.data);
+    const property = await createPropertySubmission(parsed.data, session.user.id);
     return { success: true, slug: property.slug };
   } catch {
     return {

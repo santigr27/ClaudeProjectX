@@ -1,5 +1,7 @@
 import {
+  countPropertiesByOwnerAndStatus,
   findFeaturedProperties,
+  findPropertiesByOwner,
   findPropertyBySlug,
   findProperties,
   listDistinctLocalitiesWithNeighborhoods,
@@ -64,4 +66,12 @@ export async function getFeaturedProperties(limit?: number) {
 
 export async function getPropertyFilterOptions() {
   return listDistinctLocalitiesWithNeighborhoods();
+}
+
+export async function getOwnerDashboardData(ownerId: string) {
+  const [properties, counts] = await Promise.all([
+    findPropertiesByOwner(ownerId),
+    countPropertiesByOwnerAndStatus(ownerId),
+  ]);
+  return { properties, counts };
 }
