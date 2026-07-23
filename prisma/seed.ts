@@ -203,6 +203,7 @@ async function main() {
   await prisma.amenity.deleteMany();
   await prisma.agent.deleteMany();
   await prisma.neighborhoodMarketData.deleteMany();
+  await prisma.user.deleteMany();
 
   await prisma.neighborhoodMarketData.createMany({ data: mockNeighborhoodMarketData });
   console.log(`Seeded ${mockNeighborhoodMarketData.length} neighborhood market data rows.`);

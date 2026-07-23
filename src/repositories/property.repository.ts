@@ -127,8 +127,8 @@ export async function findProperties(filters: PropertyFilters) {
 export async function findPropertyBySlug(
   slug: string,
 ): Promise<PropertyWithRelations | null> {
-  return prisma.property.findUnique({
-    where: { slug },
+  return prisma.property.findFirst({
+    where: { slug, status: "PUBLISHED" },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
       agent: true,
