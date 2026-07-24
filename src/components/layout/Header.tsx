@@ -1,20 +1,22 @@
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { navigation } from "@/config/site";
+import { getNavigation } from "@/config/site";
 import { auth } from "@/lib/auth";
+import { getMarketplaceConfig } from "@/features/marketplace/config";
 import { Logo } from "./Logo";
 import { HeaderSearchForm } from "./HeaderSearchForm";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 
 export async function Header() {
-  const session = await auth();
+  const [session, config] = await Promise.all([auth(), getMarketplaceConfig()]);
   const user = session?.user;
+  const navigation = getNavigation(config.terminology);
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/95 backdrop-blur-sm">
       <div className="relative mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <Logo />
+        <Logo name={config.name} logoUrl={config.logoUrl} />
 
         <nav aria-label="Navegación principal" className="hidden md:block">
           <ul className="flex items-center gap-1">
@@ -55,7 +57,10 @@ export async function Header() {
             </Link>
           )}
 
-          <MobileNav user={user ? { name: user.name ?? user.email ?? "Cuenta" } : null} />
+          <MobileNav
+            user={user ? { name: user.name ?? user.email ?? "Cuenta" } : null}
+            navigation={navigation}
+          />
         </div>
       </div>
     </header>

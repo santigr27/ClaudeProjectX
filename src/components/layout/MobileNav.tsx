@@ -3,11 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, LogOut } from "lucide-react";
-import { navigation } from "@/config/site";
 import { HeaderSearchForm } from "./HeaderSearchForm";
 import { signOutAction } from "@/features/auth/actions";
 
-export function MobileNav({ user }: { user: { name: string } | null }) {
+export function MobileNav({
+  user,
+  navigation,
+}: {
+  user: { name: string } | null;
+  navigation: readonly { label: string; href: string }[];
+}) {
   const [open, setOpen] = useState(false);
 
   return (

@@ -192,8 +192,66 @@ const AGENTS = [
   { name: "Sebastián Ortiz Mora", email: "sebastian.ortiz@raiz-demo.co", phone: "+57 318 555 0170" },
 ];
 
+const DEFAULT_MARKETPLACE_CONFIG = {
+  slug: "raiz",
+  name: "Raíz",
+  tagline: "Encuentra tu próxima propiedad en Bogotá",
+  description:
+    "Marketplace inmobiliario para comprar, arrendar y valorar propiedades en Bogotá, Colombia.",
+  primaryColor: "#1d4ed8",
+  secondaryColor: "#0f172a",
+  accentColor: "#2f7d57",
+  backgroundColor: "#f8fafc",
+  defaultCurrency: "COP",
+  defaultLocale: "es-CO",
+  country: "Colombia",
+  marketplaceType: "real_estate",
+  terminology: {
+    listing: "Propiedad",
+    listingPlural: "Propiedades",
+    seller: "Agente",
+    sellerPlural: "Agentes",
+    store: "Inmobiliaria",
+    storePlural: "Inmobiliarias",
+    category: "Tipo de propiedad",
+    categoryPlural: "Tipos de propiedad",
+    sellAction: "Vender",
+    sellCta: "Publicar propiedad",
+  },
+};
+
+// Sensible module defaults for the real-estate vertical; a hardware/food
+// marketplace built on the same core would flip CART/CHECKOUT/INVENTORY on
+// and LOCATION-specific ones off, purely through this table — no code change.
+const DEFAULT_FEATURE_FLAGS: Record<string, boolean> = {
+  ENABLE_CART: false,
+  ENABLE_CHECKOUT: false,
+  ENABLE_CONTACT_SELLER: true,
+  ENABLE_FAVORITES: true,
+  ENABLE_STORES: false,
+  ENABLE_SELLER_APPROVAL: false,
+  ENABLE_LISTING_MODERATION: true,
+  ENABLE_INVENTORY: false,
+  ENABLE_LOCATION: true,
+  ENABLE_REVIEWS: false,
+  ENABLE_AUCTIONS: false,
+};
+
 async function main() {
   console.log("Seeding database...");
+
+  // Idempotent: never overwrites an existing config/flag, so re-running the
+  // seed to refresh demo listings doesn't clobber branding an admin already
+  // configured through /admin/branding or /admin/settings.
+  const existingConfig = await prisma.marketplaceConfig.findFirst();
+  if (!existingConfig) {
+    await prisma.marketplaceConfig.create({ data: DEFAULT_MARKETPLACE_CONFIG });
+    console.log("Seeded default marketplace config (Raíz).");
+  }
+  for (const [key, enabled] of Object.entries(DEFAULT_FEATURE_FLAGS)) {
+    await prisma.featureFlag.upsert({ where: { key }, update: {}, create: { key, enabled } });
+  }
+  console.log(`Ensured ${Object.keys(DEFAULT_FEATURE_FLAGS).length} feature flags exist.`);
 
   await prisma.favorite.deleteMany();
   await prisma.propertyAmenity.deleteMany();

@@ -10,7 +10,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-display: var(--font-fraunces);
+}
 
+/*
+ * Deliberately a PLAIN @theme block (not `inline`): `inline` bakes the
+ * literal hex into every generated utility (`.bg-brand-600{background-color:#1d4ed8}`),
+ * which would make MarketplaceConfig-driven runtime rebranding impossible —
+ * a plain @theme keeps utilities referencing `var(--color-brand-600)`, so the
+ * inline style override the root layout sets from MarketplaceConfig
+ * (see src/lib/color-scale.ts) actually takes effect. These hex values are
+ * only the fallback shown before any config loads / when none is configured.
+ */
+@theme {
   /* Brand: a trustworthy, modern blue — the primary color for the actions
      that drive conversion (CTAs, prices, active states, links). Deliberately
      NOT applied everywhere: property photography stays the visual lead. */

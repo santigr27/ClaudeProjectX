@@ -10,6 +10,62 @@ datasource db {
   provider = "postgresql"
 }
 
+// --- White-label marketplace configuration ---------------------------------
+// Single-row config for the ONE active marketplace this deployment serves
+// (see docs: multi-tenant SaaS is an explicit non-goal for the MVP). Reading
+// this at request time — instead of baking values into globals.css — is what
+// lets an admin rebrand the marketplace without a rebuild/redeploy.
+model MarketplaceConfig {
+  id          String @id @default(cuid())
+  name        String
+  slug        String @unique
+  tagline     String
+  description String
+
+  logoUrl          String?
+  secondaryLogoUrl String?
+  faviconUrl       String?
+
+  // Single hex per role; the full brand-50..900 scale used by globals.css is
+  // derived from `primaryColor` at render time via CSS color-mix(), so admins
+  // never have to pick nine coordinated shades themselves.
+  primaryColor    String @default("#1d4ed8")
+  secondaryColor  String @default("#0f172a")
+  accentColor     String @default("#2f7d57")
+  backgroundColor String @default("#f8fafc")
+
+  defaultCurrency String @default("COP")
+  defaultLocale   String @default("es-CO")
+  country         String?
+  marketplaceType String  @default("real_estate")
+
+  supportEmail String?
+  supportPhone String?
+
+  // Record<TerminologyKey, string> — see src/config/terminology.ts for the
+  // key list and defaults; missing keys fall back to the generic defaults so
+  // a partial config never breaks rendering.
+  terminology     Json?
+  // Ordered list of homepage section keys to render — see
+  // src/config/homepage-sections.ts for the recognized keys.
+  homepageSections Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Simple on/off switches for optional marketplace modules (cart, reviews,
+// seller approval, ...). Checked server-side wherever a module is optional;
+// absence of a row for a key means "disabled" (see feature-flags.repository).
+model FeatureFlag {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  enabled     Boolean @default(false)
+  description String?
+
+  updatedAt DateTime @updatedAt
+}
+
 enum ListingType {
   SALE
   RENT

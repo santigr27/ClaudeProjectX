@@ -1,25 +1,34 @@
 import type { Metadata } from "next";
 import { listLocalitiesWithNeighborhoods } from "@/repositories/market-data.repository";
+import { getMarketplaceConfig } from "@/features/marketplace/config";
 import { SellPropertyForm } from "@/components/sell/SellPropertyForm";
 
-export const metadata: Metadata = {
-  title: "Publicar propiedad",
-  description: "Publica tu propiedad en venta o arriendo en Bogotá en minutos.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getMarketplaceConfig();
+  return {
+    title: config.terminology.sellCta,
+    description: `Publica tu ${config.terminology.listing.toLowerCase()} en minutos.`,
+  };
+}
 
 export default async function SellPage() {
-  const localities = await listLocalitiesWithNeighborhoods();
+  const [localities, config] = await Promise.all([
+    listLocalitiesWithNeighborhoods(),
+    getMarketplaceConfig(),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-semibold text-ink-900">Publica tu propiedad</h1>
+        <h1 className="font-display text-3xl font-semibold text-ink-900">
+          {config.terminology.sellCta}
+        </h1>
         <p className="mt-2 text-ink-500">
-          Completa la información de tu propiedad. Nuestro equipo la revisará antes de publicarla.
+          Completa la información. Nuestro equipo la revisará antes de publicarla.
         </p>
       </div>
 
-      <SellPropertyForm localities={localities} />
+      <SellPropertyForm localities={localities} sellCta={config.terminology.sellCta} />
     </div>
   );
 }

@@ -8,13 +8,23 @@ export const siteConfig = {
   currency: "COP",
 };
 
-export const navigation = [
-  { label: "Comprar", href: "/properties?listingType=sale" },
-  { label: "Arrendar", href: "/properties?listingType=rent" },
-  { label: "Vender", href: "/sell" },
-  { label: "Estimar propiedad", href: "/estimate" },
-  { label: "Favoritos", href: "/favorites" },
-] as const;
+import type { Terminology } from "./terminology";
+
+/**
+ * Real-estate vertical's nav entries. "Comprar"/"Arrendar"/"Estimar" stay
+ * fixed for now — a fully category-driven nav is Phase 4 territory, once
+ * the generic Category model exists. Only the "sell" label is already
+ * terminology-driven, proving the mechanism end to end.
+ */
+export function getNavigation(terminology: Terminology) {
+  return [
+    { label: "Comprar", href: "/properties?listingType=sale" },
+    { label: "Arrendar", href: "/properties?listingType=rent" },
+    { label: terminology.sellAction, href: "/sell" },
+    { label: "Estimar propiedad", href: "/estimate" },
+    { label: "Favoritos", href: "/favorites" },
+  ] as const;
+}
 
 export const mapConfig = {
   bogotaCenter: { lat: 4.65, lng: -74.1 } as const,

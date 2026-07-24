@@ -35,6 +35,7 @@ export function SellPropertyForm({
   propertyId,
   initialValues,
   existingImages,
+  sellCta = "Publicar propiedad",
 }: {
   localities: LocalityOption[];
   mode?: "create" | "edit";
@@ -45,6 +46,8 @@ export function SellPropertyForm({
   initialValues?: Record<string, string | string[]>;
   /** Existing photos (edit mode only) shown read-only above the uploader. */
   existingImages?: { id: string; imageUrl: string }[];
+  /** Marketplace-configured label for the publish CTA (create mode only). */
+  sellCta?: string;
 }) {
   const action = mode === "edit" ? updatePropertyAction : submitPropertyAction;
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -301,7 +304,7 @@ export function SellPropertyForm({
             : "Al publicar aceptas que la información será revisada antes de aparecer en el sitio."}
         </p>
         <Button type="submit" size="lg" disabled={isPending}>
-          {isPending ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Publicar propiedad"}
+          {isPending ? "Guardando..." : mode === "edit" ? "Guardar cambios" : sellCta}
         </Button>
       </div>
     </form>
