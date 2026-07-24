@@ -1,21 +1,21 @@
 import type {
-  Agent,
+  SellerProfile,
   ListingType,
-  Property,
-  PropertyImage,
+  Listing,
+  ListingImage,
   PropertyType,
 } from "@/generated/prisma/client";
 
 export type { ListingType, PropertyType };
 
-export type PropertyWithRelations = Property & {
-  images: PropertyImage[];
-  agent: Agent | null;
+export type PropertyWithRelations = Listing & {
+  images: ListingImage[];
+  seller: SellerProfile | null;
   amenities: { amenity: { id: string; name: string } }[];
 };
 
 export type PropertySummary = Pick<
-  Property,
+  Listing,
   | "id"
   | "slug"
   | "title"

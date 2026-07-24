@@ -9,7 +9,7 @@ import type {
 
 const SORT_TO_ORDER_BY: Record<
   NonNullable<PropertyFilters["sort"]>,
-  Prisma.PropertyOrderByWithRelationInput[]
+  Prisma.ListingOrderByWithRelationInput[]
 > = {
   recommended: [{ featured: "desc" }, { createdAt: "desc" }],
   price_asc: [{ price: "asc" }],
@@ -18,8 +18,8 @@ const SORT_TO_ORDER_BY: Record<
   price_per_sqm_asc: [{ price: "asc" }], // refined below with in-memory sort (price/area ratio has no DB column)
 };
 
-export function buildWhere(filters: PropertyFilters): Prisma.PropertyWhereInput {
-  const where: Prisma.PropertyWhereInput = {
+export function buildWhere(filters: PropertyFilters): Prisma.ListingWhereInput {
+  const where: Prisma.ListingWhereInput = {
     status: "PUBLISHED",
   };
 
@@ -66,7 +66,7 @@ export function buildWhere(filters: PropertyFilters): Prisma.PropertyWhereInput 
 }
 
 function toSummary(
-  property: Prisma.PropertyGetPayload<{ include: { images: true } }>,
+  property: Prisma.ListingGetPayload<{ include: { images: true } }>,
 ): PropertySummary {
   const cover = [...property.images].sort((a, b) => a.sortOrder - b.sortOrder)[0];
   return {
@@ -96,7 +96,7 @@ export async function findProperties(filters: PropertyFilters) {
   const sort = filters.sort ?? "recommended";
 
   const [rows, total] = await Promise.all([
-    prisma.property.findMany({
+    prisma.listing.findMany({
       where,
       include: { images: true },
       orderBy: SORT_TO_ORDER_BY[sort],
@@ -104,7 +104,7 @@ export async function findProperties(filters: PropertyFilters) {
       skip: sort === "price_per_sqm_asc" ? 0 : (page - 1) * pageSize,
       take: sort === "price_per_sqm_asc" ? undefined : pageSize,
     }),
-    prisma.property.count({ where }),
+    prisma.listing.count({ where }),
   ]);
 
   let summaries = rows.map(toSummary);
@@ -127,18 +127,18 @@ export async function findProperties(filters: PropertyFilters) {
 export async function findPropertyBySlug(
   slug: string,
 ): Promise<PropertyWithRelations | null> {
-  return prisma.property.findFirst({
+  return prisma.listing.findFirst({
     where: { slug, status: "PUBLISHED" },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
-      agent: true,
+      seller: true,
       amenities: { include: { amenity: true } },
     },
   });
 }
 
 export async function findFeaturedProperties(limit = 6): Promise<PropertySummary[]> {
-  const rows = await prisma.property.findMany({
+  const rows = await prisma.listing.findMany({
     where: { status: "PUBLISHED", featured: true },
     include: { images: true },
     orderBy: { createdAt: "desc" },
@@ -149,7 +149,7 @@ export async function findFeaturedProperties(limit = 6): Promise<PropertySummary
 
 export async function findPropertiesByIds(ids: string[]): Promise<PropertySummary[]> {
   if (ids.length === 0) return [];
-  const rows = await prisma.property.findMany({
+  const rows = await prisma.listing.findMany({
     where: { id: { in: ids }, status: "PUBLISHED" },
     include: { images: true },
   });
@@ -157,7 +157,7 @@ export async function findPropertiesByIds(ids: string[]): Promise<PropertySummar
 }
 
 export async function listDistinctLocalities(): Promise<string[]> {
-  const rows = await prisma.property.findMany({
+  const rows = await prisma.listing.findMany({
     where: { status: "PUBLISHED" },
     select: { locality: true },
     distinct: ["locality"],
@@ -171,7 +171,7 @@ export interface OwnerPropertySummary {
   slug: string;
   title: string;
   listingType: PropertySummary["listingType"];
-  status: Prisma.PropertyGetPayload<{ select: { status: true } }>["status"];
+  status: Prisma.ListingGetPayload<{ select: { status: true } }>["status"];
   price: number;
   neighborhood: string;
   createdAt: Date;
@@ -181,7 +181,7 @@ export interface OwnerPropertySummary {
 /** All of a user's own listings, any status — powers /dashboard. Never
  * exposed to other users; callers must pass the authenticated user's id. */
 export async function findPropertiesByOwner(ownerId: string): Promise<OwnerPropertySummary[]> {
-  const rows = await prisma.property.findMany({
+  const rows = await prisma.listing.findMany({
     where: { ownerId },
     include: { images: true },
     orderBy: { createdAt: "desc" },
@@ -206,7 +206,7 @@ export async function findPropertiesByOwner(ownerId: string): Promise<OwnerPrope
 export async function countPropertiesByOwnerAndStatus(
   ownerId: string,
 ): Promise<Record<"PUBLISHED" | "PENDING_REVIEW" | "DRAFT" | "REJECTED", number>> {
-  const rows = await prisma.property.groupBy({
+  const rows = await prisma.listing.groupBy({
     by: ["status"],
     where: { ownerId },
     _count: true,
@@ -224,12 +224,12 @@ export async function countPropertiesByOwnerAndStatus(
  * someone else, so callers can't distinguish "not found" from "not
  * yours" and leak which ids exist. */
 export async function findOwnedPropertyById(id: string, ownerId: string) {
-  return prisma.property.findFirst({
+  return prisma.listing.findFirst({
     where: { id, ownerId },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
       amenities: { include: { amenity: true } },
-      agent: true,
+      seller: true,
     },
   });
 }
@@ -245,7 +245,7 @@ export interface LocalityWithNeighborhoods {
  * never offer a combination with zero results.
  */
 export async function listDistinctLocalitiesWithNeighborhoods(): Promise<LocalityWithNeighborhoods[]> {
-  const rows = await prisma.property.findMany({
+  const rows = await prisma.listing.findMany({
     where: { status: "PUBLISHED" },
     select: { locality: true, neighborhood: true },
     distinct: ["locality", "neighborhood"],

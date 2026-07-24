@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BedDouble, Bath, Car, Ruler } from "lucide-react";
 import { clsx } from "clsx";
 import { Badge } from "@/components/ui/Badge";
-import { FavoriteButton } from "./FavoriteButton";
+import { FavoriteButton } from "@/components/property/FavoriteButton";
 import {
   formatCompactCOP,
   formatCompactPricePerSqm,
@@ -13,15 +13,22 @@ import { propertyTypeLabels } from "@/config/site";
 import { calculatePricePerSqm } from "@/lib/property-math";
 import type { PropertySummary } from "@/types/property";
 
-export function PropertyCard({
-  property,
+/**
+ * Generic marketplace card — real-estate fields (bedrooms/bathrooms/area)
+ * render conditionally today because that's what the one vertical currently
+ * live needs; a future vertical's category-driven "featured attributes"
+ * (spec section 9) would replace this fixed field list without touching
+ * layout/image/favorite/price handling below.
+ */
+export function ListingCard({
+  listing,
   initialFavorited = false,
   highlighted = false,
   priority = false,
   onMouseEnter,
   onMouseLeave,
 }: {
-  property: PropertySummary;
+  listing: PropertySummary;
   initialFavorited?: boolean;
   highlighted?: boolean;
   /** Set for the first card(s) above the fold to help LCP; leave the default off elsewhere. */
@@ -29,11 +36,11 @@ export function PropertyCard({
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
-  const pricePerSqm = calculatePricePerSqm(property.price, property.areaSqm);
+  const pricePerSqm = calculatePricePerSqm(listing.price, listing.areaSqm);
 
   return (
     <Link
-      href={`/properties/${property.slug}`}
+      href={`/properties/${listing.slug}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={clsx(
@@ -42,10 +49,10 @@ export function PropertyCard({
       )}
     >
       <div className="relative aspect-4/3 w-full overflow-hidden bg-ink-100">
-        {property.coverImageUrl ? (
+        {listing.coverImageUrl ? (
           <Image
-            src={property.coverImageUrl}
-            alt={property.title}
+            src={listing.coverImageUrl}
+            alt={listing.title}
             fill
             priority={priority}
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
@@ -56,10 +63,10 @@ export function PropertyCard({
         )}
 
         <div className="absolute left-3 top-3">
-          <Badge variant="outline">{property.listingType === "SALE" ? "Venta" : "Arriendo"}</Badge>
+          <Badge variant="outline">{listing.listingType === "SALE" ? "Venta" : "Arriendo"}</Badge>
         </div>
         <FavoriteButton
-          propertyId={property.id}
+          propertyId={listing.id}
           initialFavorited={initialFavorited}
           className="absolute right-3 top-3"
         />
@@ -67,36 +74,36 @@ export function PropertyCard({
 
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="font-display text-xl font-semibold text-ink-900">
-          {property.listingType === "SALE"
-            ? formatCompactCOP(property.price)
-            : formatCompactRentPerMonth(property.price)}
+          {listing.listingType === "SALE"
+            ? formatCompactCOP(listing.price)
+            : formatCompactRentPerMonth(listing.price)}
         </p>
 
         <p className="text-sm text-ink-500">
-          {propertyTypeLabels[property.propertyType]} · {property.neighborhood}
+          {propertyTypeLabels[listing.propertyType]} · {listing.neighborhood}
         </p>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-600">
-          {property.bedrooms > 0 && (
+          {listing.bedrooms > 0 && (
             <span className="flex items-center gap-1">
               <BedDouble className="size-4 text-ink-400" aria-hidden />
-              {property.bedrooms}
+              {listing.bedrooms}
             </span>
           )}
-          {property.bathrooms > 0 && (
+          {listing.bathrooms > 0 && (
             <span className="flex items-center gap-1">
               <Bath className="size-4 text-ink-400" aria-hidden />
-              {property.bathrooms}
+              {listing.bathrooms}
             </span>
           )}
           <span className="flex items-center gap-1">
             <Ruler className="size-4 text-ink-400" aria-hidden />
-            {property.areaSqm} m²
+            {listing.areaSqm} m²
           </span>
-          {property.parkingSpaces > 0 && (
+          {listing.parkingSpaces > 0 && (
             <span className="flex items-center gap-1">
               <Car className="size-4 text-ink-400" aria-hidden />
-              {property.parkingSpaces}
+              {listing.parkingSpaces}
             </span>
           )}
         </div>

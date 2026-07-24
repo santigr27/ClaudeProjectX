@@ -10,11 +10,11 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-async function findOrCreateAgentForSubmission(input: SellPropertyInput) {
-  const existing = await prisma.agent.findUnique({ where: { email: input.contactEmail } });
+async function findOrCreateSellerForSubmission(input: SellPropertyInput) {
+  const existing = await prisma.sellerProfile.findUnique({ where: { email: input.contactEmail } });
   if (existing) return existing;
 
-  return prisma.agent.create({
+  return prisma.sellerProfile.create({
     data: {
       name: input.contactName,
       email: input.contactEmail,
@@ -45,12 +45,12 @@ async function resolveAmenityIds(names: string[]): Promise<string[]> {
  * (see features/sell/actions.ts).
  */
 export async function createPropertySubmission(input: SellPropertyInput, ownerId: string) {
-  const agent = await findOrCreateAgentForSubmission(input);
+  const seller = await findOrCreateSellerForSubmission(input);
   const baseSlug = slugify(`${input.title}-${input.neighborhood}-${Math.round(input.areaSqm)}m2`);
   const slug = `${baseSlug}-${Date.now().toString(36)}`;
   const amenityIds = await resolveAmenityIds(input.amenities);
 
-  return prisma.property.create({
+  return prisma.listing.create({
     data: {
       slug,
       title: input.title,
@@ -78,7 +78,7 @@ export async function createPropertySubmission(input: SellPropertyInput, ownerId
       latitude: 4.65,
       longitude: -74.1,
       status: "PENDING_REVIEW",
-      agentId: agent.id,
+      agentId: seller.id,
       ownerId,
       amenities: {
         create: amenityIds.map((amenityId) => ({ amenityId })),
@@ -99,12 +99,12 @@ export async function updateOwnedPropertySubmission(
   ownerId: string,
   input: SellPropertyInput,
 ) {
-  const property = await prisma.property.findFirst({ where: { id, ownerId }, select: { id: true } });
+  const property = await prisma.listing.findFirst({ where: { id, ownerId }, select: { id: true } });
   if (!property) return null;
 
   const amenityIds = await resolveAmenityIds(input.amenities);
 
-  return prisma.property.update({
+  return prisma.listing.update({
     where: { id },
     data: {
       title: input.title,

@@ -146,12 +146,12 @@ export default async function PropertyDetailPage({
 
         <div id="contact-form" className="lg:col-span-1">
           <div className="lg:sticky lg:top-20">
-            <ContactCard agent={property.agent} propertyId={property.id} propertyTitle={property.title} />
+            <ContactCard seller={property.seller} propertyId={property.id} propertyTitle={property.title} />
           </div>
         </div>
       </div>
 
-      <MobileContactBar agent={property.agent} propertyTitle={property.title} />
+      <MobileContactBar seller={property.seller} propertyTitle={property.title} />
     </div>
   );
 }

@@ -324,11 +324,11 @@ async function main() {
 
   await prisma.favorite.deleteMany();
   await prisma.propertyAmenity.deleteMany();
-  await prisma.propertyImage.deleteMany();
+  await prisma.listingImage.deleteMany();
   await prisma.lead.deleteMany();
-  await prisma.property.deleteMany();
+  await prisma.listing.deleteMany();
   await prisma.amenity.deleteMany();
-  await prisma.agent.deleteMany();
+  await prisma.sellerProfile.deleteMany();
   await prisma.neighborhoodMarketData.deleteMany();
   await prisma.user.deleteMany();
 
@@ -341,7 +341,7 @@ async function main() {
 
   const agents = await Promise.all(
     AGENTS.map((agent, index) =>
-      prisma.agent.create({
+      prisma.sellerProfile.create({
         data: {
           ...agent,
           whatsapp: agent.phone,
@@ -414,7 +414,7 @@ async function main() {
         propertyType === "LOT" ? [] : pickN(amenities, 2, Math.min(5, amenities.length));
       const imageCount = randomInt(4, 6);
 
-      await prisma.property.create({
+      await prisma.listing.create({
         data: {
           slug,
           title,

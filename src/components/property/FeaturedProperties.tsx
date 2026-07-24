@@ -1,6 +1,6 @@
 import { getFeaturedProperties } from "@/features/properties/queries";
 import { getFavoritedIdsForCurrentSession } from "@/features/favorites/queries";
-import { PropertyGrid } from "./PropertyGrid";
+import { ListingGrid } from "@/components/listing/ListingGrid";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 
@@ -29,7 +29,7 @@ export async function FeaturedProperties() {
       {properties.length === 0 ? (
         <EmptyState title="Aún no hay propiedades destacadas" />
       ) : (
-        <PropertyGrid properties={properties} favoritedIds={favoritedIds} />
+        <ListingGrid properties={properties} favoritedIds={favoritedIds} />
       )}
     </section>
   );

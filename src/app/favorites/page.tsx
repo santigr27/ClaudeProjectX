@@ -3,7 +3,7 @@ import { Heart } from "lucide-react";
 import { getSessionId } from "@/lib/session";
 import { findPropertiesByIds } from "@/repositories/property.repository";
 import { listFavoritedPropertyIds } from "@/repositories/favorite.repository";
-import { PropertyGrid } from "@/components/property/PropertyGrid";
+import { ListingGrid } from "@/components/listing/ListingGrid";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 
@@ -29,7 +29,7 @@ export default async function FavoritesPage() {
           action={<Button href="/properties">Explorar propiedades</Button>}
         />
       ) : (
-        <PropertyGrid properties={properties} favoritedIds={favoritedIds} />
+        <ListingGrid properties={properties} favoritedIds={favoritedIds} />
       )}
     </div>
   );

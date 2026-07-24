@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Map as MapIcon, List as ListIcon } from "lucide-react";
-import { PropertyCard } from "@/components/property/PropertyCard";
+import { ListingCard } from "@/components/listing/ListingCard";
 import { PropertyCardSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SortSelect } from "./SortSelect";
@@ -100,9 +100,9 @@ export function PropertySearchExperience({
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {properties.map((property, index) => (
-                <PropertyCard
+                <ListingCard
                   key={property.id}
-                  property={property}
+                  listing={property}
                   initialFavorited={favoritedIds.has(property.id)}
                   highlighted={property.id === selectedId}
                   priority={index === 0}

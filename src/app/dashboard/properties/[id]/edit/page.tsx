@@ -43,9 +43,9 @@ export default async function EditPropertyPage({
     administrationFee: property.administrationFee ? String(property.administrationFee) : "",
     description: property.description,
     amenities: property.amenities.map((item) => item.amenity.name),
-    contactName: property.agent?.name ?? "",
-    contactEmail: property.agent?.email ?? "",
-    contactPhone: property.agent?.phone ?? "",
+    contactName: property.seller?.name ?? "",
+    contactEmail: property.seller?.email ?? "",
+    contactPhone: property.seller?.phone ?? "",
   };
 
   return (

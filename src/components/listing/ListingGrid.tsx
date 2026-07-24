@@ -1,7 +1,7 @@
-import { PropertyCard } from "./PropertyCard";
+import { ListingCard } from "./ListingCard";
 import type { PropertySummary } from "@/types/property";
 
-export function PropertyGrid({
+export function ListingGrid({
   properties,
   favoritedIds,
 }: {
@@ -10,11 +10,11 @@ export function PropertyGrid({
 }) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {properties.map((property, index) => (
-        <PropertyCard
-          key={property.id}
-          property={property}
-          initialFavorited={favoritedIds?.has(property.id) ?? false}
+      {properties.map((listing, index) => (
+        <ListingCard
+          key={listing.id}
+          listing={listing}
+          initialFavorited={favoritedIds?.has(listing.id) ?? false}
           priority={index === 0}
         />
       ))}
