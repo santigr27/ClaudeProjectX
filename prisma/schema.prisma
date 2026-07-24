@@ -161,16 +161,88 @@ model PropertyImage {
   @@index([propertyId])
 }
 
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
   passwordHash String
   imageUrl     String?
+  // A user may eventually hold multiple roles (spec section 13); a single
+  // enum column is the right MVP scope — widen to a join table only if that
+  // becomes a real requirement.
+  role         Role     @default(BUYER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   properties Property[]
+}
+
+// --- Category + attribute engine --------------------------------------
+// Lets a new marketplace vertical (hardware, food, ...) define its own
+// browse hierarchy and per-category fields entirely through data — no code
+// change. See AttributeDefinition.nativeField for how the real-estate
+// vertical's existing Property columns (bedrooms, areaSqm, ...) plug into
+// this same engine without a destructive data migration.
+model Category {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String  @unique
+  parentId String?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+
+  icon      String?
+  imageUrl  String?
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  attributes AttributeDefinition[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+}
+
+enum AttributeDataType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+  MULTI_SELECT
+  DATE
+}
+
+model AttributeDefinition {
+  id         String            @id @default(cuid())
+  categoryId String
+  category   Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name       String
+  // Stable identifier used in URLs/forms/ListingAttributeValue, e.g. "brand".
+  key        String
+  dataType   AttributeDataType
+  required   Boolean           @default(false)
+  filterable Boolean           @default(false)
+  searchable Boolean           @default(false)
+  unit       String?
+  sortOrder  Int               @default(0)
+  // Allowed choices for SELECT/MULTI_SELECT, as a JSON string[].
+  options    Json?
+  // When set, the sell form/filters read and write this column on Property
+  // directly (e.g. "bedrooms") instead of a ListingAttributeValue row — how
+  // the real-estate vertical's existing fields join this engine without
+  // rewriting 51 seeded rows into EAV storage. New verticals leave this null.
+  nativeField String?
+
+  @@unique([categoryId, key])
+  @@index([categoryId])
 }
 
 model Amenity {

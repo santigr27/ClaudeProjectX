@@ -237,6 +237,48 @@ const DEFAULT_FEATURE_FLAGS: Record<string, boolean> = {
   ENABLE_AUCTIONS: false,
 };
 
+// Real-estate attributes map onto EXISTING Property columns via `nativeField`
+// instead of being written to ListingAttributeValue — see
+// prisma/schema.prisma AttributeDefinition.nativeField for why. A new
+// vertical (e.g. hardware) would omit nativeField and use true EAV storage.
+const REAL_ESTATE_ATTRIBUTES = {
+  bedrooms: { name: "Habitaciones", dataType: "NUMBER", nativeField: "bedrooms", filterable: true },
+  bathrooms: { name: "Baños", dataType: "NUMBER", nativeField: "bathrooms", filterable: true },
+  parkingSpaces: {
+    name: "Parqueaderos",
+    dataType: "NUMBER",
+    nativeField: "parkingSpaces",
+    filterable: true,
+  },
+  areaSqm: { name: "Área", dataType: "NUMBER", nativeField: "areaSqm", unit: "m²", filterable: true },
+  estrato: { name: "Estrato", dataType: "NUMBER", nativeField: "estrato", filterable: true },
+} as const;
+
+const REAL_ESTATE_CATEGORIES: Array<{
+  slug: string;
+  name: string;
+  attributeKeys: (keyof typeof REAL_ESTATE_ATTRIBUTES)[];
+}> = [
+  {
+    slug: "apartamento",
+    name: "Apartamento",
+    attributeKeys: ["bedrooms", "bathrooms", "parkingSpaces", "areaSqm", "estrato"],
+  },
+  {
+    slug: "casa",
+    name: "Casa",
+    attributeKeys: ["bedrooms", "bathrooms", "parkingSpaces", "areaSqm", "estrato"],
+  },
+  { slug: "estudio", name: "Estudio", attributeKeys: ["bathrooms", "areaSqm"] },
+  {
+    slug: "penthouse",
+    name: "Penthouse",
+    attributeKeys: ["bedrooms", "bathrooms", "parkingSpaces", "areaSqm", "estrato"],
+  },
+  { slug: "local-comercial", name: "Local comercial", attributeKeys: ["areaSqm", "parkingSpaces"] },
+  { slug: "lote", name: "Lote", attributeKeys: ["areaSqm"] },
+];
+
 async function main() {
   console.log("Seeding database...");
 
@@ -252,6 +294,33 @@ async function main() {
     await prisma.featureFlag.upsert({ where: { key }, update: {}, create: { key, enabled } });
   }
   console.log(`Ensured ${Object.keys(DEFAULT_FEATURE_FLAGS).length} feature flags exist.`);
+
+  for (const [index, categoryDef] of REAL_ESTATE_CATEGORIES.entries()) {
+    const category = await prisma.category.upsert({
+      where: { slug: categoryDef.slug },
+      update: {},
+      create: { slug: categoryDef.slug, name: categoryDef.name, sortOrder: index },
+    });
+
+    for (const [attrIndex, attrKey] of categoryDef.attributeKeys.entries()) {
+      const attribute = REAL_ESTATE_ATTRIBUTES[attrKey];
+      await prisma.attributeDefinition.upsert({
+        where: { categoryId_key: { categoryId: category.id, key: attrKey } },
+        update: {},
+        create: {
+          categoryId: category.id,
+          key: attrKey,
+          name: attribute.name,
+          dataType: attribute.dataType,
+          unit: "unit" in attribute ? attribute.unit : null,
+          filterable: attribute.filterable,
+          nativeField: attribute.nativeField,
+          sortOrder: attrIndex,
+        },
+      });
+    }
+  }
+  console.log(`Ensured ${REAL_ESTATE_CATEGORIES.length} real-estate categories exist.`);
 
   await prisma.favorite.deleteMany();
   await prisma.propertyAmenity.deleteMany();

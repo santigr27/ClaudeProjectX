@@ -23,7 +23,10 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request }) {
       const isLoggedIn = Boolean(auth?.user);
       const { pathname } = request.nextUrl;
-      const requiresAuth = pathname.startsWith("/dashboard") || pathname.startsWith("/sell");
+      const requiresAuth =
+        pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/sell") ||
+        pathname.startsWith("/admin");
       return requiresAuth ? isLoggedIn : true;
     },
   },
