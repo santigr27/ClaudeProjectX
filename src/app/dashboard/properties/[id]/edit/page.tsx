@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { findOwnedPropertyById } from "@/repositories/property.repository";
 import { listLocalitiesWithNeighborhoods } from "@/repositories/market-data.repository";
 import { findActiveTopLevelCategories } from "@/repositories/category.repository";
+import { isFeatureEnabled, FEATURE_FLAGS } from "@/features/marketplace/feature-flags";
 import { SellPropertyForm } from "@/components/sell/SellPropertyForm";
 
 export const metadata: Metadata = {
@@ -19,10 +20,11 @@ export default async function EditPropertyPage({
   const session = await auth();
   if (!session?.user?.id) redirect(`/login?callbackUrl=/dashboard/properties/${id}/edit`);
 
-  const [property, localities, categories] = await Promise.all([
+  const [property, localities, categories, locationEnabled] = await Promise.all([
     findOwnedPropertyById(id, session.user.id),
     listLocalitiesWithNeighborhoods(),
     findActiveTopLevelCategories(),
+    isFeatureEnabled(FEATURE_FLAGS.LOCATION),
   ]);
 
   // Property doesn't exist, or belongs to someone else — notFound() either
@@ -31,12 +33,12 @@ export default async function EditPropertyPage({
 
   const initialValues: Record<string, string | string[]> = {
     listingType: property.listingType === "SALE" ? "sale" : "rent",
-    propertyType: property.propertyType.toLowerCase(),
+    categoryId: property.categoryId ?? categories[0]?.id ?? "",
     title: property.title,
-    address: property.address,
-    locality: property.locality,
-    neighborhood: property.neighborhood,
-    areaSqm: String(property.areaSqm),
+    address: property.address ?? "",
+    locality: property.locality ?? "",
+    neighborhood: property.neighborhood ?? "",
+    areaSqm: property.areaSqm !== null ? String(property.areaSqm) : "",
     estrato: property.estrato ? String(property.estrato) : "",
     bedrooms: String(property.bedrooms),
     bathrooms: String(property.bathrooms),
@@ -70,6 +72,7 @@ export default async function EditPropertyPage({
       <SellPropertyForm
         localities={localities}
         categories={categories}
+        locationEnabled={locationEnabled}
         mode="edit"
         propertyId={property.id}
         initialValues={initialValues}

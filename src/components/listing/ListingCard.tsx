@@ -9,7 +9,6 @@ import {
   formatCompactPricePerSqm,
   formatCompactRentPerMonth,
 } from "@/lib/currency";
-import { propertyTypeLabels } from "@/config/site";
 import { calculatePricePerSqm } from "@/lib/property-math";
 import type { PropertySummary } from "@/types/property";
 
@@ -36,7 +35,7 @@ export function ListingCard({
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
-  const pricePerSqm = calculatePricePerSqm(listing.price, listing.areaSqm);
+  const pricePerSqm = listing.areaSqm ? calculatePricePerSqm(listing.price, listing.areaSqm) : null;
 
   return (
     <Link
@@ -80,7 +79,7 @@ export function ListingCard({
         </p>
 
         <p className="text-sm text-ink-500">
-          {propertyTypeLabels[listing.propertyType]} · {listing.neighborhood}
+          {[listing.categoryName, listing.neighborhood].filter(Boolean).join(" · ")}
         </p>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-600">
@@ -96,10 +95,12 @@ export function ListingCard({
               {listing.bathrooms}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Ruler className="size-4 text-ink-400" aria-hidden />
-            {listing.areaSqm} m²
-          </span>
+          {listing.areaSqm !== null && (
+            <span className="flex items-center gap-1">
+              <Ruler className="size-4 text-ink-400" aria-hidden />
+              {listing.areaSqm} m²
+            </span>
+          )}
           {listing.parkingSpaces > 0 && (
             <span className="flex items-center gap-1">
               <Car className="size-4 text-ink-400" aria-hidden />
@@ -108,9 +109,11 @@ export function ListingCard({
           )}
         </div>
 
-        <p className="mt-auto pt-1 text-xs font-medium text-ink-400">
-          {formatCompactPricePerSqm(pricePerSqm)}
-        </p>
+        {pricePerSqm !== null && (
+          <p className="mt-auto pt-1 text-xs font-medium text-ink-400">
+            {formatCompactPricePerSqm(pricePerSqm)}
+          </p>
+        )}
       </div>
     </Link>
   );

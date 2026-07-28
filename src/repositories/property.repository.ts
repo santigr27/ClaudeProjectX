@@ -66,7 +66,7 @@ export function buildWhere(filters: PropertyFilters): Prisma.ListingWhereInput {
 }
 
 function toSummary(
-  property: Prisma.ListingGetPayload<{ include: { images: true } }>,
+  property: Prisma.ListingGetPayload<{ include: { images: true; category: true } }>,
 ): PropertySummary {
   const cover = [...property.images].sort((a, b) => a.sortOrder - b.sortOrder)[0];
   return {
@@ -86,7 +86,15 @@ function toSummary(
     longitude: property.longitude,
     featured: property.featured,
     coverImageUrl: cover?.imageUrl ?? null,
+    categoryName: property.category?.name ?? null,
   };
+}
+
+/** `null` (no area on record) sorts last — it's not meaningfully "cheapest
+ * per square meter", just missing data (a car/phone listing, for example). */
+function pricePerSqmForSort(price: number, areaSqm: number | null): number {
+  if (areaSqm === null) return Infinity;
+  return calculatePricePerSqm(price, areaSqm) || Infinity;
 }
 
 export async function findProperties(filters: PropertyFilters) {
@@ -98,7 +106,7 @@ export async function findProperties(filters: PropertyFilters) {
   const [rows, total] = await Promise.all([
     prisma.listing.findMany({
       where,
-      include: { images: true },
+      include: { images: true, category: true },
       orderBy: SORT_TO_ORDER_BY[sort],
       // price_per_sqm_asc is computed in-memory below, so over-fetch a stable window
       skip: sort === "price_per_sqm_asc" ? 0 : (page - 1) * pageSize,
@@ -111,7 +119,7 @@ export async function findProperties(filters: PropertyFilters) {
 
   if (sort === "price_per_sqm_asc") {
     summaries = summaries
-      .sort((a, b) => calculatePricePerSqm(a.price, a.areaSqm) - calculatePricePerSqm(b.price, b.areaSqm))
+      .sort((a, b) => pricePerSqmForSort(a.price, a.areaSqm) - pricePerSqmForSort(b.price, b.areaSqm))
       .slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
   }
 
@@ -133,6 +141,8 @@ export async function findPropertyBySlug(
       images: { orderBy: { sortOrder: "asc" } },
       seller: true,
       amenities: { include: { amenity: true } },
+      category: true,
+      attributeValues: { include: { attributeDefinition: true } },
     },
   });
 }
@@ -140,7 +150,7 @@ export async function findPropertyBySlug(
 export async function findFeaturedProperties(limit = 6): Promise<PropertySummary[]> {
   const rows = await prisma.listing.findMany({
     where: { status: "PUBLISHED", featured: true },
-    include: { images: true },
+    include: { images: true, category: true },
     orderBy: { createdAt: "desc" },
     take: limit,
   });
@@ -151,19 +161,19 @@ export async function findPropertiesByIds(ids: string[]): Promise<PropertySummar
   if (ids.length === 0) return [];
   const rows = await prisma.listing.findMany({
     where: { id: { in: ids }, status: "PUBLISHED" },
-    include: { images: true },
+    include: { images: true, category: true },
   });
   return rows.map(toSummary);
 }
 
 export async function listDistinctLocalities(): Promise<string[]> {
   const rows = await prisma.listing.findMany({
-    where: { status: "PUBLISHED" },
+    where: { status: "PUBLISHED", locality: { not: null } },
     select: { locality: true },
     distinct: ["locality"],
     orderBy: { locality: "asc" },
   });
-  return rows.map((row) => row.locality);
+  return rows.map((row) => row.locality).filter((locality): locality is string => locality !== null);
 }
 
 export interface OwnerPropertySummary {
@@ -173,7 +183,8 @@ export interface OwnerPropertySummary {
   listingType: PropertySummary["listingType"];
   status: Prisma.ListingGetPayload<{ select: { status: true } }>["status"];
   price: number;
-  neighborhood: string;
+  neighborhood: string | null;
+  categoryName: string | null;
   createdAt: Date;
   coverImageUrl: string | null;
 }
@@ -183,7 +194,7 @@ export interface OwnerPropertySummary {
 export async function findPropertiesByOwner(ownerId: string): Promise<OwnerPropertySummary[]> {
   const rows = await prisma.listing.findMany({
     where: { ownerId },
-    include: { images: true },
+    include: { images: true, category: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -197,6 +208,7 @@ export async function findPropertiesByOwner(ownerId: string): Promise<OwnerPrope
       status: property.status,
       price: property.price,
       neighborhood: property.neighborhood,
+      categoryName: property.category?.name ?? null,
       createdAt: property.createdAt,
       coverImageUrl: cover?.imageUrl ?? null,
     };
@@ -230,6 +242,7 @@ export async function findOwnedPropertyById(id: string, ownerId: string) {
       images: { orderBy: { sortOrder: "asc" } },
       amenities: { include: { amenity: true } },
       seller: true,
+      category: true,
       attributeValues: { include: { attributeDefinition: true } },
     },
   });
@@ -243,11 +256,12 @@ export interface LocalityWithNeighborhoods {
 /**
  * Distinct locality/neighborhood pairs actually present in published
  * listings, used to populate the /properties filter dropdowns so they
- * never offer a combination with zero results.
+ * never offer a combination with zero results. Listings with no location
+ * (a non-real-estate vertical) are simply excluded from this list.
  */
 export async function listDistinctLocalitiesWithNeighborhoods(): Promise<LocalityWithNeighborhoods[]> {
   const rows = await prisma.listing.findMany({
-    where: { status: "PUBLISHED" },
+    where: { status: "PUBLISHED", locality: { not: null }, neighborhood: { not: null } },
     select: { locality: true, neighborhood: true },
     distinct: ["locality", "neighborhood"],
     orderBy: [{ locality: "asc" }, { neighborhood: "asc" }],
@@ -255,6 +269,7 @@ export async function listDistinctLocalitiesWithNeighborhoods(): Promise<Localit
 
   const byLocality = new Map<string, string[]>();
   for (const row of rows) {
+    if (!row.locality || !row.neighborhood) continue;
     const list = byLocality.get(row.locality) ?? [];
     list.push(row.neighborhood);
     byLocality.set(row.locality, list);

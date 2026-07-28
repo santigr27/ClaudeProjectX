@@ -20,8 +20,14 @@ export function DashboardPropertyRow({ property }: { property: OwnerPropertySumm
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-ink-900">{property.title}</p>
         <p className="text-sm text-ink-500">
-          {listingTypeLabels[property.listingType]} · {property.neighborhood} ·{" "}
-          {property.createdAt.toLocaleDateString("es-CO")}
+          {[
+            listingTypeLabels[property.listingType],
+            property.categoryName,
+            property.neighborhood,
+            property.createdAt.toLocaleDateString("es-CO"),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </p>
       </div>
 

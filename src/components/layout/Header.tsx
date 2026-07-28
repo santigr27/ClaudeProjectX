@@ -3,15 +3,20 @@ import { Heart } from "lucide-react";
 import { getNavigation } from "@/config/site";
 import { auth } from "@/lib/auth";
 import { getMarketplaceConfig } from "@/features/marketplace/config";
+import { isFeatureEnabled, FEATURE_FLAGS } from "@/features/marketplace/feature-flags";
 import { Logo } from "./Logo";
 import { HeaderSearchForm } from "./HeaderSearchForm";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 
 export async function Header() {
-  const [session, config] = await Promise.all([auth(), getMarketplaceConfig()]);
+  const [session, config, locationEnabled] = await Promise.all([
+    auth(),
+    getMarketplaceConfig(),
+    isFeatureEnabled(FEATURE_FLAGS.LOCATION),
+  ]);
   const user = session?.user;
-  const navigation = getNavigation(config.terminology);
+  const navigation = getNavigation(config.terminology, locationEnabled);
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/95 backdrop-blur-sm">

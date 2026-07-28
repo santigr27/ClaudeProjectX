@@ -11,19 +11,22 @@ export const siteConfig = {
 import type { Terminology } from "./terminology";
 
 /**
- * Real-estate vertical's nav entries. "Comprar"/"Arrendar"/"Estimar" stay
- * fixed for now — a fully category-driven nav is Phase 4 territory, once
- * the generic Category model exists. Only the "sell" label is already
- * terminology-driven, proving the mechanism end to end.
+ * Real-estate vertical's nav entries. "Comprar"/"Arrendar" stay fixed for
+ * now — a fully category-driven nav is a bigger future step, once the
+ * generic Category model has a browse UI of its own. The "sell" label is
+ * already terminology-driven, and "Estimar propiedad" (the Bogotá price/m²
+ * valuation tool — meaningless for a phone or a car) only shows when
+ * ENABLE_LOCATION is on, since it depends entirely on the same
+ * neighborhood/area data that flag gates on the sell form.
  */
-export function getNavigation(terminology: Terminology) {
+export function getNavigation(terminology: Terminology, locationEnabled: boolean) {
   return [
     { label: "Comprar", href: "/properties?listingType=sale" },
     { label: "Arrendar", href: "/properties?listingType=rent" },
     { label: terminology.sellAction, href: "/sell" },
-    { label: "Estimar propiedad", href: "/estimate" },
+    ...(locationEnabled ? [{ label: "Estimar propiedad", href: "/estimate" }] : []),
     { label: "Favoritos", href: "/favorites" },
-  ] as const;
+  ];
 }
 
 export const mapConfig = {

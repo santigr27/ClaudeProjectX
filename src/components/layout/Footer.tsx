@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
 import { getMarketplaceConfig } from "@/features/marketplace/config";
+import { isFeatureEnabled, FEATURE_FLAGS } from "@/features/marketplace/feature-flags";
 
 export async function Footer() {
-  const config = await getMarketplaceConfig();
+  const [config, locationEnabled] = await Promise.all([
+    getMarketplaceConfig(),
+    isFeatureEnabled(FEATURE_FLAGS.LOCATION),
+  ]);
 
   const footerLinks = [
     {
@@ -11,7 +15,7 @@ export async function Footer() {
       links: [
         { label: "Comprar", href: "/properties?listingType=sale" },
         { label: "Arrendar", href: "/properties?listingType=rent" },
-        { label: "Estimar propiedad", href: "/estimate" },
+        ...(locationEnabled ? [{ label: "Estimar propiedad", href: "/estimate" }] : []),
       ],
     },
     {

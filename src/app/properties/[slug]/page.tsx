@@ -5,10 +5,11 @@ import { getPropertyDetail } from "@/features/properties/queries";
 import { getFavoritedIdsForCurrentSession } from "@/features/favorites/queries";
 import { comparePriceToNeighborhoodAverage } from "@/services/valuation.service";
 import { generateMockNearbyPlaces } from "@/config/nearby-places.mock";
-import { propertyTypeLabels, listingTypeLabels, siteConfig } from "@/config/site";
+import { listingTypeLabels, siteConfig } from "@/config/site";
 import { formatCOP } from "@/lib/currency";
 import { PropertyGallery } from "@/components/property/PropertyGallery";
 import { PropertyInfoGrid } from "@/components/property/PropertyInfoGrid";
+import { AttributeValueList } from "@/components/property/AttributeValueList";
 import { PropertyFeatures } from "@/components/property/PropertyFeatures";
 import { PriceAnalysis } from "@/components/property/PriceAnalysis";
 import { NearbyPlaces } from "@/components/property/NearbyPlaces";
@@ -26,7 +27,14 @@ export async function generateMetadata({
   const property = await getPropertyDetail(slug);
   if (!property) return { title: "Propiedad no encontrada" };
 
-  const description = `${propertyTypeLabels[property.propertyType]} en ${listingTypeLabels[property.listingType].toLowerCase()} en ${property.neighborhood}, ${property.locality}. ${property.areaSqm} m², ${property.bedrooms} habitaciones, ${formatCOP(property.price)}.`;
+  const typeLabel = property.category?.name ?? "Anuncio";
+  const locationLabel = [property.neighborhood, property.locality].filter(Boolean).join(", ");
+  const areaLabel = property.areaSqm ? `${property.areaSqm} m², ` : "";
+  const bedroomsLabel = property.bedrooms > 0 ? `${property.bedrooms} habitaciones, ` : "";
+  const description =
+    `${typeLabel} en ${listingTypeLabels[property.listingType].toLowerCase()}` +
+    (locationLabel ? ` en ${locationLabel}` : "") +
+    `. ${areaLabel}${bedroomsLabel}${formatCOP(property.price)}.`;
 
   return {
     title: property.title,
@@ -48,19 +56,27 @@ export default async function PropertyDetailPage({
   const property = await getPropertyDetail(slug);
   if (!property) notFound();
 
+  const hasLocationData = Boolean(property.locality && property.neighborhood && property.areaSqm);
+
   const [priceAnalysis, favoritedIds] = await Promise.all([
-    comparePriceToNeighborhoodAverage({
-      locality: property.locality,
-      neighborhood: property.neighborhood,
-      listingType: property.listingType === "SALE" ? "sale" : "rent",
-      price: property.price,
-      areaSqm: property.areaSqm,
-    }),
+    hasLocationData
+      ? comparePriceToNeighborhoodAverage({
+          locality: property.locality!,
+          neighborhood: property.neighborhood!,
+          listingType: property.listingType === "SALE" ? "sale" : "rent",
+          price: property.price,
+          areaSqm: property.areaSqm!,
+        })
+      : Promise.resolve(null),
     getFavoritedIdsForCurrentSession(),
   ]);
 
   const nearbyPlaces = generateMockNearbyPlaces(property.slug);
   const amenityNames = property.amenities.map((item) => item.amenity.name);
+  const hasCoordinates = property.latitude !== null && property.longitude !== null;
+  const locationLine = [property.address, property.neighborhood, property.locality]
+    .filter(Boolean)
+    .join(", ");
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -69,18 +85,20 @@ export default async function PropertyDetailPage({
     description: property.description,
     url: `${siteConfig.url}/properties/${property.slug}`,
     image: property.images.map((image) => image.imageUrl),
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: property.address,
-      addressLocality: property.neighborhood,
-      addressRegion: property.locality,
-      addressCountry: "CO",
-    },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: property.latitude,
-      longitude: property.longitude,
-    },
+    ...(property.address && property.neighborhood && property.locality
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: property.address,
+            addressLocality: property.neighborhood,
+            addressRegion: property.locality,
+            addressCountry: "CO",
+          },
+        }
+      : {}),
+    ...(hasCoordinates
+      ? { geo: { "@type": "GeoCoordinates", latitude: property.latitude, longitude: property.longitude } }
+      : {}),
     offers: {
       "@type": "Offer",
       price: property.price,
@@ -106,10 +124,12 @@ export default async function PropertyDetailPage({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1 className="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">{property.title}</h1>
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-500">
-                  <MapPin className="size-4" aria-hidden />
-                  {property.address}, {property.neighborhood}, {property.locality}
-                </p>
+                {locationLine && (
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-500">
+                    <MapPin className="size-4" aria-hidden />
+                    {locationLine}
+                  </p>
+                )}
               </div>
               <FavoriteButton propertyId={property.id} initialFavorited={favoritedIds.has(property.id)} />
             </div>
@@ -121,6 +141,13 @@ export default async function PropertyDetailPage({
           </div>
 
           <PropertyInfoGrid property={property} />
+
+          {property.attributeValues.length > 0 && (
+            <section>
+              <h2 className="mb-3 font-display text-xl font-semibold text-ink-900">Detalles</h2>
+              <AttributeValueList attributeValues={property.attributeValues} />
+            </section>
+          )}
 
           <section>
             <h2 className="mb-3 font-display text-xl font-semibold text-ink-900">Descripción</h2>
@@ -134,14 +161,18 @@ export default async function PropertyDetailPage({
             </section>
           )}
 
-          <section>
-            <h2 className="mb-3 font-display text-xl font-semibold text-ink-900">Ubicación</h2>
-            <PropertyLocationMap latitude={property.latitude} longitude={property.longitude} />
-            <p className="mt-3 mb-2 text-sm font-medium text-ink-700">Puntos de interés cercanos</p>
-            <NearbyPlaces places={nearbyPlaces} />
-          </section>
+          {hasCoordinates && (
+            <section>
+              <h2 className="mb-3 font-display text-xl font-semibold text-ink-900">Ubicación</h2>
+              <PropertyLocationMap latitude={property.latitude!} longitude={property.longitude!} />
+              <p className="mt-3 mb-2 text-sm font-medium text-ink-700">Puntos de interés cercanos</p>
+              <NearbyPlaces places={nearbyPlaces} />
+            </section>
+          )}
 
-          <PriceAnalysis analysis={priceAnalysis} neighborhood={property.neighborhood} />
+          {priceAnalysis && property.neighborhood && (
+            <PriceAnalysis analysis={priceAnalysis} neighborhood={property.neighborhood} />
+          )}
         </div>
 
         <div id="contact-form" className="lg:col-span-1">

@@ -101,30 +101,43 @@ enum LeadStatus {
 // original real-estate model (bedrooms, areaSqm, ...); those become
 // category-driven attributes in Phase 4 rather than being torn out now.
 model Listing {
-  id                String         @id @default(cuid())
-  slug              String         @unique
-  title             String
-  description       String
-  listingType       ListingType
-  propertyType      PropertyType
-  price             Float
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String
+  description String
+  listingType ListingType
+  price       Float
+  status      PropertyStatus @default(PUBLISHED)
+  featured    Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Real-estate-only fields, all nullable so a non-real-estate vertical
+  // (a car, a phone, ...) can leave every one of them unset. Kept as native
+  // columns rather than migrated to ListingAttributeValue — see Listing's
+  // original comment on this being a type-level generalization, not a
+  // rewrite. `propertyType` stays only for backward-compat filtering; new
+  // verticals rely on `categoryId` instead (see Category.nativeValue).
+  propertyType      PropertyType?
   administrationFee Float?
-  areaSqm           Float
-  bedrooms          Int
-  bathrooms         Int
-  parkingSpaces     Int            @default(0)
+  areaSqm           Float?
+  bedrooms          Int           @default(0)
+  bathrooms         Int           @default(0)
+  parkingSpaces     Int           @default(0)
   estrato           Int?
   floor             Int?
   propertyAge       Int?
-  address           String
-  locality          String
-  neighborhood      String
-  latitude          Float
-  longitude         Float
-  status            PropertyStatus @default(PUBLISHED)
-  featured          Boolean        @default(false)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  address           String?
+  locality          String?
+  neighborhood      String?
+  latitude          Float?
+  longitude         Float?
+
+  // The generic, vertical-agnostic type link — every listing (real estate
+  // included, backfilled) sets this; `propertyType` above is the
+  // real-estate-only legacy/native mirror of it.
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   agentId String?
   seller  SellerProfile? @relation(fields: [agentId], references: [id])
@@ -146,6 +159,7 @@ model Listing {
   @@index([propertyType])
   @@index([latitude, longitude])
   @@index([ownerId])
+  @@index([categoryId])
   @@map("Property")
 }
 
@@ -237,6 +251,7 @@ model Category {
   nativeValue String?
 
   attributes AttributeDefinition[]
+  listings   Listing[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

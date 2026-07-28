@@ -4,6 +4,7 @@ import type {
   Listing,
   ListingImage,
   PropertyType,
+  AttributeDefinition,
 } from "@/generated/prisma/client";
 
 export type { ListingType, PropertyType };
@@ -12,6 +13,11 @@ export type PropertyWithRelations = Listing & {
   images: ListingImage[];
   seller: SellerProfile | null;
   amenities: { amenity: { id: string; name: string } }[];
+  category: { name: string } | null;
+  attributeValues: {
+    value: unknown;
+    attributeDefinition: AttributeDefinition;
+  }[];
 };
 
 export type PropertySummary = Pick<
@@ -33,6 +39,10 @@ export type PropertySummary = Pick<
   | "featured"
 > & {
   coverImageUrl: string | null;
+  /** Universal type label — read this instead of `propertyType` wherever
+   * possible, since it's set for every listing (real estate included, via
+   * backfill) while `propertyType` only exists for the native enum values. */
+  categoryName: string | null;
 };
 
 export interface PropertyFilters {

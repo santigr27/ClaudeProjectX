@@ -59,12 +59,23 @@ export function PropertyMap({
     }
   }, [properties]);
 
+  // A non-real-estate listing (no location fields at all) has no
+  // coordinates to plot — it simply doesn't get a marker, same as it
+  // wouldn't get one on any map-based marketplace.
+  const geolocated = useMemo(
+    () => properties.filter(
+      (p): p is typeof p & { latitude: number; longitude: number } =>
+        p.latitude !== null && p.longitude !== null,
+    ),
+    [properties],
+  );
+
   const center = useMemo(() => {
-    if (properties.length === 0) return mapConfig.bogotaCenter;
-    const avgLat = properties.reduce((sum, p) => sum + p.latitude, 0) / properties.length;
-    const avgLng = properties.reduce((sum, p) => sum + p.longitude, 0) / properties.length;
+    if (geolocated.length === 0) return mapConfig.bogotaCenter;
+    const avgLat = geolocated.reduce((sum, p) => sum + p.latitude, 0) / geolocated.length;
+    const avgLng = geolocated.reduce((sum, p) => sum + p.longitude, 0) / geolocated.length;
     return { lat: avgLat, lng: avgLng };
-  }, [properties]);
+  }, [geolocated]);
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl">
@@ -84,7 +95,7 @@ export function PropertyMap({
           }}
         />
         <MarkerClusterGroup chunkedLoading showCoverageOnHover={false}>
-          {properties.map((property) => {
+          {geolocated.map((property) => {
             const label =
               property.listingType === "SALE"
                 ? formatCompactCOP(property.price)
@@ -116,7 +127,7 @@ export function PropertyMap({
                         : formatCompactRentPerMonth(property.price)}
                     </p>
                     <p className="text-xs text-ink-500">
-                      {property.neighborhood}, {property.locality}
+                      {[property.neighborhood, property.locality].filter(Boolean).join(", ")}
                     </p>
                   </Link>
                 </Popup>

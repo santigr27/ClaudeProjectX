@@ -288,6 +288,34 @@ const REAL_ESTATE_CATEGORIES: Array<{
   { slug: "lote", name: "Lote", nativeValue: "LOT", attributeKeys: ["areaSqm"] },
 ];
 
+// Proof-of-concept second vertical (spec section 43/48.20): a category with
+// NO native equivalent — none of its attributes have `nativeField`, so every
+// value is true EAV storage in ListingAttributeValue, and it has no
+// nativeValue itself, so it never appears in the real-estate propertyType
+// filters/sell-form dropdown mapping. Demonstrates the same
+// category/attribute engine works for a completely different product type
+// without a single code change — only this seed data differs.
+const CARROS_ATTRIBUTES: Array<{
+  key: string;
+  name: string;
+  dataType: "TEXT" | "NUMBER" | "SELECT";
+  unit?: string;
+  options?: string[];
+  filterable: boolean;
+}> = [
+  { key: "marca", name: "Marca", dataType: "TEXT", filterable: true },
+  { key: "modelo", name: "Modelo", dataType: "TEXT", filterable: false },
+  { key: "anio", name: "Año", dataType: "NUMBER", filterable: true },
+  { key: "kilometraje", name: "Kilometraje", dataType: "NUMBER", unit: "km", filterable: true },
+  {
+    key: "combustible",
+    name: "Combustible",
+    dataType: "SELECT",
+    options: ["Gasolina", "Diésel", "Híbrido", "Eléctrico"],
+    filterable: true,
+  },
+];
+
 async function main() {
   console.log("Seeding database...");
 
@@ -335,6 +363,40 @@ async function main() {
     }
   }
   console.log(`Ensured ${REAL_ESTATE_CATEGORIES.length} real-estate categories exist.`);
+
+  const carrosCategory = await prisma.category.upsert({
+    where: { slug: "carros" },
+    update: {},
+    create: {
+      slug: "carros",
+      name: "Carros",
+      sortOrder: REAL_ESTATE_CATEGORIES.length,
+    },
+  });
+  for (const [attrIndex, attribute] of CARROS_ATTRIBUTES.entries()) {
+    await prisma.attributeDefinition.upsert({
+      where: { categoryId_key: { categoryId: carrosCategory.id, key: attribute.key } },
+      update: {},
+      create: {
+        categoryId: carrosCategory.id,
+        key: attribute.key,
+        name: attribute.name,
+        dataType: attribute.dataType,
+        unit: attribute.unit ?? null,
+        options: attribute.options ?? undefined,
+        filterable: attribute.filterable,
+        sortOrder: attrIndex,
+      },
+    });
+  }
+  console.log('Ensured "Carros" proof-of-concept category exists (no native equivalent).');
+
+  const categoryIdByNativeValue = new Map(
+    (await prisma.category.findMany({ where: { nativeValue: { not: null } } })).map((category) => [
+      category.nativeValue,
+      category.id,
+    ]),
+  );
 
   await prisma.favorite.deleteMany();
   await prisma.propertyAmenity.deleteMany();
@@ -443,6 +505,7 @@ async function main() {
           }),
           listingType,
           propertyType,
+          categoryId: categoryIdByNativeValue.get(propertyType) ?? null,
           price,
           administrationFee,
           areaSqm,

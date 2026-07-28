@@ -29,11 +29,11 @@ function InfoItem({ icon, label, value }: { icon: ReactNode; label: string; valu
 }
 
 export function PropertyInfoGrid({ property }: { property: PropertyWithRelations }) {
-  const pricePerSqm = calculatePricePerSqm(property.price, property.areaSqm);
+  const items: { icon: ReactNode; label: string; value: string }[] = [];
 
-  const items: { icon: ReactNode; label: string; value: string }[] = [
-    { icon: <Ruler className="size-4" aria-hidden />, label: "Área", value: `${property.areaSqm} m²` },
-  ];
+  if (property.areaSqm !== null) {
+    items.push({ icon: <Ruler className="size-4" aria-hidden />, label: "Área", value: `${property.areaSqm} m²` });
+  }
 
   if (property.bedrooms > 0) {
     items.push({
@@ -76,11 +76,13 @@ export function PropertyInfoGrid({ property }: { property: PropertyWithRelations
   if (property.estrato !== null) {
     items.push({ icon: <Gauge className="size-4" aria-hidden />, label: "Estrato", value: String(property.estrato) });
   }
-  items.push({
-    icon: <Tag className="size-4" aria-hidden />,
-    label: "Precio por m²",
-    value: formatPricePerSqm(pricePerSqm),
-  });
+  if (property.areaSqm !== null) {
+    items.push({
+      icon: <Tag className="size-4" aria-hidden />,
+      label: "Precio por m²",
+      value: formatPricePerSqm(calculatePricePerSqm(property.price, property.areaSqm)),
+    });
+  }
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { findCategoryById } from "@/repositories/category.repository";
 import type { SellPropertyInput } from "@/validations/sell";
 
 function slugify(text: string): string {
@@ -38,6 +39,37 @@ async function resolveAmenityIds(names: string[]): Promise<string[]> {
   return amenities.map((amenity) => amenity.id);
 }
 
+const REAL_ESTATE_TYPES = ["APARTMENT", "HOUSE", "STUDIO", "PENTHOUSE", "COMMERCIAL", "LOT"] as const;
+type RealEstateType = (typeof REAL_ESTATE_TYPES)[number];
+
+function isRealEstateType(value: string | null): value is RealEstateType {
+  return REAL_ESTATE_TYPES.includes(value as RealEstateType);
+}
+
+/**
+ * Resolves the submitted categoryId into the fields that actually get
+ * written: the native `propertyType` enum (only set when the category maps
+ * onto one — see Category.nativeValue) plus Bogotá's default coordinates
+ * (only meaningful for that same real-estate vertical; a category with no
+ * native equivalent gets no coordinates at all rather than a wrong default).
+ */
+async function resolveCategoryFields(categoryId: string) {
+  const category = await findCategoryById(categoryId);
+  const propertyType = isRealEstateType(category?.nativeValue ?? null)
+    ? (category!.nativeValue as RealEstateType)
+    : null;
+
+  return {
+    category,
+    propertyType,
+    // Coordinates are unknown at submission time for the MVP even for real
+    // estate (geocoding can be added later without changing this write
+    // path); a non-real-estate vertical simply has no location concept yet.
+    latitude: propertyType ? 4.65 : null,
+    longitude: propertyType ? -74.1 : null,
+  };
+}
+
 /**
  * Creates the property row itself. Photos are handled separately by the
  * caller via services/property-image.service.ts — uploaded files need to
@@ -46,7 +78,10 @@ async function resolveAmenityIds(names: string[]): Promise<string[]> {
  */
 export async function createPropertySubmission(input: SellPropertyInput, ownerId: string) {
   const seller = await findOrCreateSellerForSubmission(input);
-  const baseSlug = slugify(`${input.title}-${input.neighborhood}-${Math.round(input.areaSqm)}m2`);
+  const { category, propertyType, latitude, longitude } = await resolveCategoryFields(input.categoryId);
+
+  const slugParts = [input.title, input.neighborhood ?? category?.name, input.areaSqm ? `${Math.round(input.areaSqm)}m2` : null];
+  const baseSlug = slugify(slugParts.filter(Boolean).join("-"));
   const slug = `${baseSlug}-${Date.now().toString(36)}`;
   const amenityIds = await resolveAmenityIds(input.amenities);
 
@@ -56,27 +91,20 @@ export async function createPropertySubmission(input: SellPropertyInput, ownerId
       title: input.title,
       description: input.description,
       listingType: input.listingType === "sale" ? "SALE" : "RENT",
-      propertyType: input.propertyType.toUpperCase() as
-        | "APARTMENT"
-        | "HOUSE"
-        | "STUDIO"
-        | "PENTHOUSE"
-        | "COMMERCIAL"
-        | "LOT",
+      categoryId: input.categoryId,
+      propertyType,
       price: input.price,
       administrationFee: input.administrationFee ?? null,
-      areaSqm: input.areaSqm,
+      areaSqm: input.areaSqm ?? null,
       bedrooms: input.bedrooms,
       bathrooms: input.bathrooms,
       parkingSpaces: input.parkingSpaces,
       estrato: input.estrato ?? null,
-      address: input.address,
-      locality: input.locality,
-      neighborhood: input.neighborhood,
-      // Coordinates are unknown at submission time for the MVP; geocoding
-      // can be added later without changing this write path.
-      latitude: 4.65,
-      longitude: -74.1,
+      address: input.address ?? null,
+      locality: input.locality ?? null,
+      neighborhood: input.neighborhood ?? null,
+      latitude,
+      longitude,
       status: "PENDING_REVIEW",
       agentId: seller.id,
       ownerId,
@@ -102,6 +130,7 @@ export async function updateOwnedPropertySubmission(
   const property = await prisma.listing.findFirst({ where: { id, ownerId }, select: { id: true } });
   if (!property) return null;
 
+  const { propertyType } = await resolveCategoryFields(input.categoryId);
   const amenityIds = await resolveAmenityIds(input.amenities);
 
   return prisma.listing.update({
@@ -110,23 +139,18 @@ export async function updateOwnedPropertySubmission(
       title: input.title,
       description: input.description,
       listingType: input.listingType === "sale" ? "SALE" : "RENT",
-      propertyType: input.propertyType.toUpperCase() as
-        | "APARTMENT"
-        | "HOUSE"
-        | "STUDIO"
-        | "PENTHOUSE"
-        | "COMMERCIAL"
-        | "LOT",
+      categoryId: input.categoryId,
+      propertyType,
       price: input.price,
       administrationFee: input.administrationFee ?? null,
-      areaSqm: input.areaSqm,
+      areaSqm: input.areaSqm ?? null,
       bedrooms: input.bedrooms,
       bathrooms: input.bathrooms,
       parkingSpaces: input.parkingSpaces,
       estrato: input.estrato ?? null,
-      address: input.address,
-      locality: input.locality,
-      neighborhood: input.neighborhood,
+      address: input.address ?? null,
+      locality: input.locality ?? null,
+      neighborhood: input.neighborhood ?? null,
       amenities: {
         deleteMany: {},
         create: amenityIds.map((amenityId) => ({ amenityId })),

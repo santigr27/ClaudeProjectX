@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { listLocalitiesWithNeighborhoods } from "@/repositories/market-data.repository";
 import { findActiveTopLevelCategories } from "@/repositories/category.repository";
 import { getMarketplaceConfig } from "@/features/marketplace/config";
+import { isFeatureEnabled, FEATURE_FLAGS } from "@/features/marketplace/feature-flags";
 import { SellPropertyForm } from "@/components/sell/SellPropertyForm";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,10 +14,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SellPage() {
-  const [localities, config, categories] = await Promise.all([
+  const [localities, config, categories, locationEnabled] = await Promise.all([
     listLocalitiesWithNeighborhoods(),
     getMarketplaceConfig(),
     findActiveTopLevelCategories(),
+    isFeatureEnabled(FEATURE_FLAGS.LOCATION),
   ]);
 
   return (
@@ -33,6 +35,7 @@ export default async function SellPage() {
       <SellPropertyForm
         localities={localities}
         categories={categories}
+        locationEnabled={locationEnabled}
         sellCta={config.terminology.sellCta}
       />
     </div>

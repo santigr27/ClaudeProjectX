@@ -7,7 +7,7 @@ import {
 } from "@/repositories/property-submission.repository";
 import { countImagesByPropertyId } from "@/repositories/property-image.repository";
 import { assertCanAddImages, saveImage, InvalidImageError } from "@/services/property-image.service";
-import { findCategoryByNativeValue } from "@/repositories/category.repository";
+import { findCategoryById } from "@/repositories/category.repository";
 import { upsertListingAttributeValue } from "@/repositories/listing-attribute-value.repository";
 import { sellPropertySchema, type SellPropertyInput } from "@/validations/sell";
 import type { AttributeDefinition } from "@/generated/prisma/client";
@@ -81,10 +81,10 @@ function extractImageFiles(formData: FormData): File[] {
  */
 async function saveExtraAttributes(
   listingId: string,
-  categoryPropertyType: string,
+  categoryId: string,
   formData: FormData,
 ): Promise<void> {
-  const category = await findCategoryByNativeValue(categoryPropertyType.toUpperCase());
+  const category = await findCategoryById(categoryId);
   if (!category) return;
 
   const extraAttributes = category.attributes.filter(
@@ -148,7 +148,7 @@ export async function submitPropertyAction(
     const property = await createPropertySubmission(parsed.data, session.user.id);
     await Promise.all([
       ...imageFiles.map((file, index) => saveImage(property.id, file, index)),
-      saveExtraAttributes(property.id, parsed.data.propertyType, formData),
+      saveExtraAttributes(property.id, parsed.data.categoryId, formData),
     ]);
     return { success: true, slug: property.slug };
   } catch {
@@ -195,7 +195,7 @@ export async function updatePropertyAction(
     const existingImageCount = await countImagesByPropertyId(propertyId);
     await Promise.all([
       ...imageFiles.map((file, index) => saveImage(property.id, file, existingImageCount + index)),
-      saveExtraAttributes(property.id, parsed.data.propertyType, formData),
+      saveExtraAttributes(property.id, parsed.data.categoryId, formData),
     ]);
 
     return { success: true, slug: property.slug };
