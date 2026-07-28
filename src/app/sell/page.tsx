@@ -37,6 +37,9 @@ export default async function SellPage() {
         categories={categories}
         locationEnabled={locationEnabled}
         sellCta={config.terminology.sellCta}
+        categoryLabel={config.terminology.category}
+        listingLower={config.terminology.listing.toLowerCase()}
+        listingPluralLower={config.terminology.listingPlural.toLowerCase()}
       />
     </div>
   );

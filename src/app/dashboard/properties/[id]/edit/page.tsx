@@ -4,12 +4,14 @@ import { auth } from "@/lib/auth";
 import { findOwnedPropertyById } from "@/repositories/property.repository";
 import { listLocalitiesWithNeighborhoods } from "@/repositories/market-data.repository";
 import { findActiveTopLevelCategories } from "@/repositories/category.repository";
+import { getMarketplaceConfig } from "@/features/marketplace/config";
 import { isFeatureEnabled, FEATURE_FLAGS } from "@/features/marketplace/feature-flags";
 import { SellPropertyForm } from "@/components/sell/SellPropertyForm";
 
-export const metadata: Metadata = {
-  title: "Editar propiedad",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getMarketplaceConfig();
+  return { title: `Editar ${config.terminology.listing.toLowerCase()}` };
+}
 
 export default async function EditPropertyPage({
   params,
@@ -17,7 +19,7 @@ export default async function EditPropertyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = await auth();
+  const [session, config] = await Promise.all([auth(), getMarketplaceConfig()]);
   if (!session?.user?.id) redirect(`/login?callbackUrl=/dashboard/properties/${id}/edit`);
 
   const [property, localities, categories, locationEnabled] = await Promise.all([
@@ -65,7 +67,9 @@ export default async function EditPropertyPage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-semibold text-ink-900">Editar propiedad</h1>
+        <h1 className="font-display text-3xl font-semibold text-ink-900">
+          Editar {config.terminology.listing.toLowerCase()}
+        </h1>
         <p className="mt-2 text-ink-500">Actualiza la información de «{property.title}».</p>
       </div>
 
@@ -77,6 +81,9 @@ export default async function EditPropertyPage({
         propertyId={property.id}
         initialValues={initialValues}
         existingImages={property.images.map((image) => ({ id: image.id, imageUrl: image.imageUrl }))}
+        categoryLabel={config.terminology.category}
+        listingLower={config.terminology.listing.toLowerCase()}
+        listingPluralLower={config.terminology.listingPlural.toLowerCase()}
       />
     </div>
   );

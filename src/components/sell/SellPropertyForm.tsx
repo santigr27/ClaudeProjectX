@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -37,6 +36,9 @@ export function SellPropertyForm({
   initialValues,
   existingImages,
   sellCta = "Publicar propiedad",
+  categoryLabel = "Tipo de propiedad",
+  listingLower = "propiedad",
+  listingPluralLower = "propiedades",
 }: {
   localities: LocalityOption[];
   /** Drives the "Tipo de inmueble" options and which fields below are
@@ -59,6 +61,13 @@ export function SellPropertyForm({
   existingImages?: { id: string; imageUrl: string }[];
   /** Marketplace-configured label for the publish CTA (create mode only). */
   sellCta?: string;
+  /** terminology.category — e.g. "Tipo de propiedad" / "Tipo de vehículo". */
+  categoryLabel?: string;
+  /** terminology.listing/listingPlural, lowercased — this form's chrome
+   * (section headings, success message) is otherwise a real-estate-only
+   * "propiedad" regardless of which vertical's category is selected. */
+  listingLower?: string;
+  listingPluralLower?: string;
 }) {
   const action = mode === "edit" ? updatePropertyAction : submitPropertyAction;
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -110,15 +119,15 @@ export function SellPropertyForm({
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-accent-100 bg-accent-50 px-6 py-16 text-center">
         <CheckCircle2 className="size-10 text-accent-600" aria-hidden />
         <h2 className="font-display text-2xl font-semibold text-ink-900">
-          {mode === "edit" ? "¡Cambios guardados!" : "¡Tu propiedad fue enviada para revisión!"}
+          {mode === "edit" ? "¡Cambios guardados!" : "¡Tu publicación fue enviada para revisión!"}
         </h2>
         <p className="max-w-md text-ink-600">
           {mode === "edit"
-            ? "Actualizamos la información de tu propiedad."
+            ? "Actualizamos la información de tu publicación."
             : "Nuestro equipo revisará la información en las próximas horas. Te contactaremos por correo cuando tu publicación esté activa."}
         </p>
         <Button href="/dashboard" variant="outline">
-          Ir a mis propiedades
+          Ir a mis {listingPluralLower}
         </Button>
       </div>
     );
@@ -132,7 +141,7 @@ export function SellPropertyForm({
     <form key={submissionId} action={formAction} className="flex flex-col gap-8">
       {propertyId && <input type="hidden" name="propertyId" value={propertyId} />}
       <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl font-semibold text-ink-900">Tipo de propiedad</h2>
+        <h2 className="font-display text-xl font-semibold text-ink-900">{categoryLabel}</h2>
         <input type="hidden" name="listingType" value={listingType} />
         <SegmentedToggle
           name="Tipo de operación"
@@ -298,7 +307,7 @@ export function SellPropertyForm({
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-xl font-semibold text-ink-900">Descripción</h2>
         <Textarea
-          label="Cuéntanos sobre la propiedad"
+          label={`Cuéntanos sobre tu ${listingLower}`}
           name="description"
           rows={5}
           defaultValue={asString(values?.description)}
@@ -384,17 +393,20 @@ export function SellPropertyForm({
             : "Al publicar aceptas que la información será revisada antes de aparecer en el sitio."}
         </p>
         <Button type="submit" size="lg" disabled={isPending}>
-          {isPending ? "Guardando..." : mode === "edit" ? "Guardar cambios" : sellCta}
+          {isPending
+            ? "Guardando..."
+            : mode === "edit"
+              ? "Guardar cambios"
+              : // The button reflects whichever category is actually selected
+                // (e.g. "Publicar anuncio de carros") rather than always
+                // saying sellCta's configured noun ("Publicar propiedad"),
+                // which would be wrong the moment a non-native category like
+                // Carros is chosen on an otherwise real-estate deployment.
+                selectedCategory
+                ? `Publicar anuncio de ${selectedCategory.name.toLowerCase()}`
+                : sellCta}
         </Button>
       </div>
     </form>
-  );
-}
-
-export function SellFormFooterLink() {
-  return (
-    <Link href="/properties" className="text-sm text-ink-500 underline">
-      Ver propiedades publicadas
-    </Link>
   );
 }
