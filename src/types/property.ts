@@ -48,6 +48,10 @@ export type PropertySummary = Pick<
 export interface PropertyFilters {
   listingType?: ListingType;
   propertyType?: PropertyType[];
+  /** Generic category filter — works for any category regardless of
+   * whether it has a native propertyType equivalent (see
+   * Category.nativeValue). */
+  categoryId?: string;
   locality?: string;
   neighborhood?: string;
   minPrice?: number;

@@ -16,6 +16,7 @@ export interface ResolvedMarketplaceConfig {
   backgroundColor: string;
   currency: string;
   locale: string;
+  country: string | null;
   supportEmail: string | null;
   supportPhone: string | null;
   terminology: Terminology;
@@ -34,6 +35,7 @@ const FALLBACK: ResolvedMarketplaceConfig = {
   backgroundColor: "#f8fafc",
   currency: siteConfig.currency,
   locale: siteConfig.locale,
+  country: "Colombia",
   supportEmail: null,
   supportPhone: null,
   terminology: resolveTerminology(null),
@@ -63,6 +65,7 @@ export const getMarketplaceConfig = cache(async (): Promise<ResolvedMarketplaceC
     backgroundColor: row.backgroundColor,
     currency: row.defaultCurrency,
     locale: row.defaultLocale,
+    country: row.country,
     supportEmail: row.supportEmail,
     supportPhone: row.supportPhone,
     terminology: resolveTerminology((row.terminology as Partial<Terminology> | null) ?? undefined),

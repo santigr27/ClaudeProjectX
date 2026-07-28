@@ -3,20 +3,27 @@ import { redirect } from "next/navigation";
 import { Home as HomeIcon, PlusCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getOwnerDashboardData } from "@/features/properties/queries";
+import { getMarketplaceConfig } from "@/features/marketplace/config";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DashboardPropertyRow } from "@/components/dashboard/DashboardPropertyRow";
 
-export const metadata: Metadata = {
-  title: "Mis propiedades",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getMarketplaceConfig();
+  return { title: `Mis ${config.terminology.listingPlural.toLowerCase()}` };
+}
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login?callbackUrl=/dashboard");
 
-  const { properties, counts } = await getOwnerDashboardData(session.user.id);
+  const [{ properties, counts }, config] = await Promise.all([
+    getOwnerDashboardData(session.user.id),
+    getMarketplaceConfig(),
+  ]);
   const total = properties.length;
+  const listingLower = config.terminology.listing.toLowerCase();
+  const listingPluralLower = config.terminology.listingPlural.toLowerCase();
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -25,11 +32,13 @@ export default async function DashboardPage() {
           <h1 className="font-display text-2xl font-semibold text-ink-900">
             Hola, {session.user.name?.split(" ")[0]}
           </h1>
-          <p className="mt-1 text-ink-500">Gestiona las propiedades que has publicado en Raíz.</p>
+          <p className="mt-1 text-ink-500">
+            Gestiona las {listingPluralLower} que has publicado en {config.name}.
+          </p>
         </div>
         <Button href="/sell">
           <PlusCircle className="size-4" aria-hidden />
-          Publicar propiedad
+          {config.terminology.sellCta}
         </Button>
       </div>
 
@@ -52,14 +61,16 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <h2 className="mb-3 font-display text-lg font-semibold text-ink-900">Mis propiedades</h2>
+      <h2 className="mb-3 font-display text-lg font-semibold text-ink-900">
+        Mis {listingPluralLower}
+      </h2>
 
       {properties.length === 0 ? (
         <EmptyState
           icon={<HomeIcon className="size-8" aria-hidden />}
-          title="Aún no has publicado propiedades"
-          description="Publica tu primera propiedad para empezar a recibir contactos de compradores o arrendatarios."
-          action={<Button href="/sell">Publicar propiedad</Button>}
+          title={`Aún no has publicado ${listingPluralLower}`}
+          description={`Publica tu primer${listingLower.endsWith("a") ? "a" : ""} ${listingLower} para empezar a recibir contactos de compradores.`}
+          action={<Button href="/sell">{config.terminology.sellCta}</Button>}
         />
       ) : (
         <div className="flex flex-col gap-3">

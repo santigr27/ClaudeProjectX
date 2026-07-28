@@ -29,6 +29,7 @@ export function toPropertyFilters(params: PropertySearchParams): PropertyFilters
   return {
     listingType: params.listingType === "sale" ? "SALE" : params.listingType === "rent" ? "RENT" : undefined,
     propertyType: propertyTypeRaw?.map((value) => PROPERTY_TYPE_MAP[value]).filter(Boolean),
+    categoryId: params.categoryId,
     locality: params.locality,
     neighborhood: params.neighborhood,
     minPrice: params.minPrice,

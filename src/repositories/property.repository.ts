@@ -25,6 +25,7 @@ export function buildWhere(filters: PropertyFilters): Prisma.ListingWhereInput {
 
   if (filters.listingType) where.listingType = filters.listingType;
   if (filters.propertyType?.length) where.propertyType = { in: filters.propertyType };
+  if (filters.categoryId) where.categoryId = filters.categoryId;
   if (filters.locality) where.locality = filters.locality;
   if (filters.neighborhood) where.neighborhood = filters.neighborhood;
   if (filters.bedrooms !== undefined) where.bedrooms = { gte: filters.bedrooms };

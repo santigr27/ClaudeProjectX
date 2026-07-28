@@ -9,9 +9,11 @@ import { signOutAction } from "@/features/auth/actions";
 export function MobileNav({
   user,
   navigation,
+  listingPluralLower = "propiedades",
 }: {
   user: { name: string } | null;
   navigation: readonly { label: string; href: string }[];
+  listingPluralLower?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -56,7 +58,7 @@ export function MobileNav({
                       onClick={() => setOpen(false)}
                       className="block rounded-lg px-3 py-2.5 text-base font-medium text-ink-800 hover:bg-ink-50"
                     >
-                      Mis propiedades
+                      Mis {listingPluralLower}
                     </Link>
                   </li>
                   <li>

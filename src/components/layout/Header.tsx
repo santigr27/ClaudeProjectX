@@ -51,7 +51,11 @@ export async function Header() {
 
           {user ? (
             <div className="hidden sm:block">
-              <UserMenu name={user.name ?? user.email ?? "Cuenta"} />
+              <UserMenu
+                name={user.name ?? user.email ?? "Cuenta"}
+                listingPluralLower={config.terminology.listingPlural.toLowerCase()}
+                sellCta={config.terminology.sellCta}
+              />
             </div>
           ) : (
             <Link
@@ -65,6 +69,7 @@ export async function Header() {
           <MobileNav
             user={user ? { name: user.name ?? user.email ?? "Cuenta" } : null}
             navigation={navigation}
+            listingPluralLower={config.terminology.listingPlural.toLowerCase()}
           />
         </div>
       </div>

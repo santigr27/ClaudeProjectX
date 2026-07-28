@@ -29,6 +29,10 @@ export const propertySearchParamsSchema = z.object({
   propertyType: z
     .union([propertyTypeParam, z.array(propertyTypeParam)])
     .optional(),
+  /** Generic category filter — works for any category, native-mapped or
+   * not (see Category.nativeValue). `propertyType` above only covers the
+   * real-estate vertical's own categories. */
+  categoryId: z.string().min(1).optional(),
   locality: z.string().min(1).optional(),
   neighborhood: z.string().min(1).optional(),
   minPrice: z.coerce.number().nonnegative().optional(),

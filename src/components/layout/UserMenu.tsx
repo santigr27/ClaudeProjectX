@@ -11,7 +11,15 @@ function getInitials(name: string): string {
   return initials.join("") || "U";
 }
 
-export function UserMenu({ name }: { name: string }) {
+export function UserMenu({
+  name,
+  listingPluralLower = "propiedades",
+  sellCta = "Publicar propiedad",
+}: {
+  name: string;
+  listingPluralLower?: string;
+  sellCta?: string;
+}) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +61,7 @@ export function UserMenu({ name }: { name: string }) {
             className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-700 hover:bg-ink-50"
           >
             <LayoutDashboard className="size-4" aria-hidden />
-            Mis propiedades
+            Mis {listingPluralLower}
           </Link>
           <Link
             href="/sell"
@@ -62,7 +70,7 @@ export function UserMenu({ name }: { name: string }) {
             className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-700 hover:bg-ink-50"
           >
             <PlusCircle className="size-4" aria-hidden />
-            Publicar propiedad
+            {sellCta}
           </Link>
           <Link
             href="/account"
