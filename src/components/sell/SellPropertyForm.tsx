@@ -306,26 +306,33 @@ export function SellPropertyForm({
         />
       </section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl font-semibold text-ink-900">Características</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {amenityCatalog.map((amenity) => (
-            <label
-              key={amenity}
-              className="flex items-center gap-2 rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-700"
-            >
-              <input
-                type="checkbox"
-                name="amenities"
-                value={amenity}
-                defaultChecked={selectedAmenities.has(amenity)}
-                className="size-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
-              />
-              {amenity}
-            </label>
-          ))}
-        </div>
-      </section>
+      {/* Amenity checklist (Balcón, Piscina, etc.) only makes sense for
+          real-estate categories — selectedCategory.nativeValue is only set
+          for categories mapped to the legacy PropertyType enum (see
+          Category.nativeValue). A Carros or other generic-vertical category
+          has no nativeValue and simply skips this section. */}
+      {selectedCategory?.nativeValue && (
+        <section className="flex flex-col gap-4">
+          <h2 className="font-display text-xl font-semibold text-ink-900">Características</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {amenityCatalog.map((amenity) => (
+              <label
+                key={amenity}
+                className="flex items-center gap-2 rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-700"
+              >
+                <input
+                  type="checkbox"
+                  name="amenities"
+                  value={amenity}
+                  defaultChecked={selectedAmenities.has(amenity)}
+                  className="size-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+                />
+                {amenity}
+              </label>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-xl font-semibold text-ink-900">Fotos</h2>

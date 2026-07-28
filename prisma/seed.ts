@@ -193,11 +193,11 @@ const AGENTS = [
 ];
 
 const DEFAULT_MARKETPLACE_CONFIG = {
-  slug: "raiz",
-  name: "Raíz",
-  tagline: "Encuentra tu próxima propiedad en Bogotá",
+  slug: "tumarketplace",
+  name: "TuMarketPlace",
+  tagline: "Todo lo que buscas, en un solo lugar",
   description:
-    "Marketplace inmobiliario para comprar, arrendar y valorar propiedades en Bogotá, Colombia.",
+    "Compra, vende y arrienda con confianza. Publica en minutos y conecta directo con compradores verificados.",
   primaryColor: "#1d4ed8",
   secondaryColor: "#0f172a",
   accentColor: "#2f7d57",
@@ -325,7 +325,7 @@ async function main() {
   const existingConfig = await prisma.marketplaceConfig.findFirst();
   if (!existingConfig) {
     await prisma.marketplaceConfig.create({ data: DEFAULT_MARKETPLACE_CONFIG });
-    console.log("Seeded default marketplace config (Raíz).");
+    console.log("Seeded default marketplace config (TuMarketPlace).");
   }
   for (const [key, enabled] of Object.entries(DEFAULT_FEATURE_FLAGS)) {
     await prisma.featureFlag.upsert({ where: { key }, update: {}, create: { key, enabled } });

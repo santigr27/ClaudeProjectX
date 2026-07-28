@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { signOutAction } from "@/features/auth/actions";
+import { getMarketplaceConfig } from "@/features/marketplace/config";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
@@ -11,13 +12,14 @@ export const metadata: Metadata = {
 /**
  * Minimal profile page per the MVP scope: name, email, and an avatar
  * fallback (initials). No editable account-management features yet —
- * see the "My Properties" dashboard (/dashboard) for listing management.
+ * see the dashboard (/dashboard) for listing management.
  */
 export default async function AccountPage() {
-  const session = await auth();
+  const [session, config] = await Promise.all([auth(), getMarketplaceConfig()]);
   if (!session?.user) redirect("/login?callbackUrl=/account");
 
   const { name, email } = session.user;
+  const listingPluralLower = config.terminology.listingPlural.toLowerCase();
   const initials = (name ?? email ?? "U")
     .trim()
     .split(/\s+/)
@@ -38,7 +40,7 @@ export default async function AccountPage() {
 
         <div className="mt-2 flex w-full flex-col gap-2">
           <Button href="/dashboard" fullWidth>
-            Ir a mis propiedades
+            Ir a mis {listingPluralLower}
           </Button>
           <form action={signOutAction} className="w-full">
             <button

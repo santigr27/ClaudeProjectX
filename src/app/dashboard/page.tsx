@@ -69,7 +69,7 @@ export default async function DashboardPage() {
         <EmptyState
           icon={<HomeIcon className="size-8" aria-hidden />}
           title={`Aún no has publicado ${listingPluralLower}`}
-          description={`Publica tu primer${listingLower.endsWith("a") ? "a" : ""} ${listingLower} para empezar a recibir contactos de compradores.`}
+          description={`Publica tu primer anuncio de ${listingLower} para empezar a recibir contactos de compradores.`}
           action={<Button href="/sell">{config.terminology.sellCta}</Button>}
         />
       ) : (

@@ -8,7 +8,7 @@ import Link from "next/link";
  */
 export function Logo({
   className,
-  name = "Raíz",
+  name = "TuMarketPlace",
   logoUrl,
 }: {
   className?: string;

@@ -31,6 +31,7 @@ export function PropertySearchExperience({
   totalPages,
   favoritedIds,
   rawSearchParams,
+  listingPluralLower = "propiedades",
 }: {
   properties: PropertySummary[];
   total: number;
@@ -38,6 +39,7 @@ export function PropertySearchExperience({
   totalPages: number;
   favoritedIds: Set<string>;
   rawSearchParams: Record<string, string | string[] | undefined>;
+  listingPluralLower?: string;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -94,8 +96,8 @@ export function PropertySearchExperience({
         <div className={mobileView === "list" ? "block" : "hidden lg:block"}>
           {properties.length === 0 ? (
             <EmptyState
-              title="No encontramos propiedades con estos filtros"
-              description="Intenta ampliar el rango de precio, quitar filtros o buscar en otra zona de Bogotá."
+              title={`No encontramos ${listingPluralLower} con estos filtros`}
+              description="Intenta ampliar el rango de precio o quitar algunos filtros."
             />
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">

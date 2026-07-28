@@ -24,7 +24,7 @@ export interface ResolvedMarketplaceConfig {
 
 const FALLBACK: ResolvedMarketplaceConfig = {
   name: siteConfig.name,
-  slug: "raiz",
+  slug: "tumarketplace",
   tagline: siteConfig.tagline,
   description: siteConfig.description,
   logoUrl: null,
@@ -45,7 +45,7 @@ const FALLBACK: ResolvedMarketplaceConfig = {
  * Memoized per request (React `cache`), same pattern as `auth()` — every
  * server component that needs branding/terminology can call this freely
  * without issuing repeat queries in the same render pass. Falls back to the
- * original Raíz defaults if the config row is ever missing (fresh DB before
+ * `siteConfig` defaults if the config row is ever missing (fresh DB before
  * seeding, or a deployment that hasn't run the seed yet).
  */
 export const getMarketplaceConfig = cache(async (): Promise<ResolvedMarketplaceConfig> => {

@@ -56,8 +56,8 @@ export async function Footer() {
 
         <div className="mt-10 border-t border-ink-100 pt-6 text-xs text-ink-400">
           <p>
-            © {new Date().getFullYear()} {config.name}. Datos de mercado y contenido de propiedades
-            con fines demostrativos.
+            © {new Date().getFullYear()} {config.name}. Contenido de{" "}
+            {config.terminology.listingPlural.toLowerCase()} con fines demostrativos.
           </p>
         </div>
       </div>

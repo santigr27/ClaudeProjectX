@@ -1,8 +1,8 @@
 export const siteConfig = {
-  name: "Raíz",
-  tagline: "Encuentra tu próxima propiedad en Bogotá",
+  name: "TuMarketPlace",
+  tagline: "Todo lo que buscas, en un solo lugar",
   description:
-    "Marketplace inmobiliario para comprar, arrendar y valorar propiedades en Bogotá, Colombia.",
+    "Compra, vende y arrienda con confianza. Publica en minutos y conecta directo con compradores verificados.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   locale: "es-CO",
   currency: "COP",

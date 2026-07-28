@@ -195,7 +195,7 @@ export function ValuationCalculator({ localities }: { localities: LocalityOption
             </p>
             <p className="text-sm leading-relaxed">
               Completa el formulario con los datos de tu propiedad para calcular su valor
-              estimado a partir del precio promedio por metro cuadrado de su barrio en Bogotá.
+              estimado a partir del precio promedio por metro cuadrado de su barrio.
             </p>
           </div>
         )}
