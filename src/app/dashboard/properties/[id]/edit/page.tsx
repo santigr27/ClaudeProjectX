@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { findOwnedPropertyById } from "@/repositories/property.repository";
 import { listLocalitiesWithNeighborhoods } from "@/repositories/market-data.repository";
+import { findActiveTopLevelCategories } from "@/repositories/category.repository";
 import { SellPropertyForm } from "@/components/sell/SellPropertyForm";
 
 export const metadata: Metadata = {
@@ -18,9 +19,10 @@ export default async function EditPropertyPage({
   const session = await auth();
   if (!session?.user?.id) redirect(`/login?callbackUrl=/dashboard/properties/${id}/edit`);
 
-  const [property, localities] = await Promise.all([
+  const [property, localities, categories] = await Promise.all([
     findOwnedPropertyById(id, session.user.id),
     listLocalitiesWithNeighborhoods(),
+    findActiveTopLevelCategories(),
   ]);
 
   // Property doesn't exist, or belongs to someone else — notFound() either
@@ -46,6 +48,16 @@ export default async function EditPropertyPage({
     contactName: property.seller?.name ?? "",
     contactEmail: property.seller?.email ?? "",
     contactPhone: property.seller?.phone ?? "",
+    // Custom (non-native) category attributes already saved for this
+    // listing — see AttributeField for how each dataType round-trips.
+    ...Object.fromEntries(
+      property.attributeValues.map((attributeValue) => [
+        `attr_${attributeValue.attributeDefinition.key}`,
+        Array.isArray(attributeValue.value)
+          ? attributeValue.value.map(String)
+          : String(attributeValue.value),
+      ]),
+    ),
   };
 
   return (
@@ -57,6 +69,7 @@ export default async function EditPropertyPage({
 
       <SellPropertyForm
         localities={localities}
+        categories={categories}
         mode="edit"
         propertyId={property.id}
         initialValues={initialValues}

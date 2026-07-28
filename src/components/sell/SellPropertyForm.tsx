@@ -7,20 +7,19 @@ import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ImageUploadInput } from "./ImageUploadInput";
+import { AttributeField } from "./AttributeField";
 import {
   submitPropertyAction,
   updatePropertyAction,
   type SellActionState,
 } from "@/features/sell/actions";
-import { amenityCatalog, propertyTypeLabels } from "@/config/site";
+import { amenityCatalog } from "@/config/site";
 import type { LocalityOption } from "@/repositories/market-data.repository";
-
-const PROPERTY_TYPE_OPTIONS = Object.entries(propertyTypeLabels).map(([value, label]) => ({
-  value: value.toLowerCase(),
-  label,
-}));
+import type { findActiveTopLevelCategories } from "@/repositories/category.repository";
 
 const ESTRATO_OPTIONS = [1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }));
+
+type CategoryWithAttributes = Awaited<ReturnType<typeof findActiveTopLevelCategories>>[number];
 
 const initialState: SellActionState = {};
 
@@ -31,6 +30,7 @@ function asString(value: string | string[] | undefined, fallback = ""): string {
 
 export function SellPropertyForm({
   localities,
+  categories,
   mode = "create",
   propertyId,
   initialValues,
@@ -38,6 +38,10 @@ export function SellPropertyForm({
   sellCta = "Publicar propiedad",
 }: {
   localities: LocalityOption[];
+  /** Drives the "Tipo de inmueble" options and which fields below are
+   * shown/hidden — see AttributeDefinition.nativeField. A category with no
+   * "bedrooms" attribute (e.g. Lote) simply never renders that input. */
+  categories: CategoryWithAttributes[];
   mode?: "create" | "edit";
   propertyId?: string;
   /** Prefills the form on first render when editing an existing property.
@@ -65,10 +69,37 @@ export function SellPropertyForm({
   const values = state.values ?? initialValues;
   const [listingType, setListingType] = useState(() => asString(values?.listingType, "sale"));
   const [locality, setLocality] = useState(() => asString(values?.locality));
+  const [propertyType, setPropertyType] = useState(() => asString(values?.propertyType, "apartment"));
 
   const neighborhoodOptions = useMemo(() => {
     return localities.find((option) => option.locality === locality)?.neighborhoods ?? [];
   }, [localities, locality]);
+
+  const propertyTypeOptions = useMemo(
+    () =>
+      categories
+        .filter((category) => category.nativeValue)
+        .map((category) => ({ value: category.nativeValue!.toLowerCase(), label: category.name })),
+    [categories],
+  );
+
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.nativeValue?.toLowerCase() === propertyType),
+    [categories, propertyType],
+  );
+
+  // Which native fields the selected category actually uses — e.g. "Lote"
+  // has no bedrooms/bathrooms/parkingSpaces/estrato attribute, so those
+  // inputs simply don't render below. Custom (non-native) attributes for
+  // this category render generically in their own section further down.
+  const nativeFieldKeys = useMemo(
+    () => new Set(selectedCategory?.attributes.map((attribute) => attribute.nativeField).filter(Boolean)),
+    [selectedCategory],
+  );
+  const extraAttributes = useMemo(
+    () => selectedCategory?.attributes.filter((attribute) => !attribute.nativeField) ?? [],
+    [selectedCategory],
+  );
 
   if (state.success) {
     return (
@@ -111,8 +142,9 @@ export function SellPropertyForm({
         <Select
           label="Tipo de inmueble"
           name="propertyType"
-          options={PROPERTY_TYPE_OPTIONS}
-          defaultValue={asString(values?.propertyType, "apartment")}
+          options={propertyTypeOptions}
+          value={propertyType}
+          onChange={(event) => setPropertyType(event.target.value)}
           error={state.fieldErrors?.propertyType}
         />
       </section>
@@ -164,40 +196,69 @@ export function SellPropertyForm({
             defaultValue={asString(values?.areaSqm)}
             error={state.fieldErrors?.areaSqm}
           />
-          <Select
-            label="Estrato"
-            name="estrato"
-            options={ESTRATO_OPTIONS}
-            placeholder="Selecciona"
-            defaultValue={asString(values?.estrato)}
-            error={state.fieldErrors?.estrato}
-          />
+          {nativeFieldKeys.has("estrato") && (
+            <Select
+              label="Estrato"
+              name="estrato"
+              options={ESTRATO_OPTIONS}
+              placeholder="Selecciona"
+              defaultValue={asString(values?.estrato)}
+              error={state.fieldErrors?.estrato}
+            />
+          )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Input
-            label="Habitaciones"
-            name="bedrooms"
-            type="number"
-            min={0}
-            defaultValue={asString(values?.bedrooms, "0")}
-          />
-          <Input
-            label="Baños"
-            name="bathrooms"
-            type="number"
-            min={0}
-            defaultValue={asString(values?.bathrooms, "0")}
-          />
-          <Input
-            label="Parqueaderos"
-            name="parkingSpaces"
-            type="number"
-            min={0}
-            defaultValue={asString(values?.parkingSpaces, "0")}
-          />
-        </div>
+        {(nativeFieldKeys.has("bedrooms") ||
+          nativeFieldKeys.has("bathrooms") ||
+          nativeFieldKeys.has("parkingSpaces")) && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {nativeFieldKeys.has("bedrooms") && (
+              <Input
+                label="Habitaciones"
+                name="bedrooms"
+                type="number"
+                min={0}
+                defaultValue={asString(values?.bedrooms, "0")}
+              />
+            )}
+            {nativeFieldKeys.has("bathrooms") && (
+              <Input
+                label="Baños"
+                name="bathrooms"
+                type="number"
+                min={0}
+                defaultValue={asString(values?.bathrooms, "0")}
+              />
+            )}
+            {nativeFieldKeys.has("parkingSpaces") && (
+              <Input
+                label="Parqueaderos"
+                name="parkingSpaces"
+                type="number"
+                min={0}
+                defaultValue={asString(values?.parkingSpaces, "0")}
+              />
+            )}
+          </div>
+        )}
       </section>
+
+      {extraAttributes.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <h2 className="font-display text-xl font-semibold text-ink-900">
+            Características de {selectedCategory?.name}
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {extraAttributes.map((attribute) => (
+              <AttributeField
+                key={attribute.id}
+                attribute={attribute}
+                value={values?.[`attr_${attribute.key}`]}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-xl font-semibold text-ink-900">Precio</h2>

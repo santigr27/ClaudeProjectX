@@ -228,6 +228,14 @@ model Category {
   active    Boolean @default(true)
   sortOrder Int     @default(0)
 
+  // Mirrors AttributeDefinition.nativeField at the category level: when
+  // set, this category corresponds to an existing PropertyType enum value
+  // (e.g. "APARTMENT"), letting the sell form / search filters treat
+  // Category as the single source of truth for that dropdown/checklist
+  // while still writing the native `propertyType` column underneath. New
+  // verticals with no native equivalent leave this null.
+  nativeValue String?
+
   attributes AttributeDefinition[]
 
   createdAt DateTime @default(now())

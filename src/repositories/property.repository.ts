@@ -230,6 +230,7 @@ export async function findOwnedPropertyById(id: string, ownerId: string) {
       images: { orderBy: { sortOrder: "asc" } },
       amenities: { include: { amenity: true } },
       seller: true,
+      attributeValues: { include: { attributeDefinition: true } },
     },
   });
 }

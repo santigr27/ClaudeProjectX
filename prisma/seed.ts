@@ -257,26 +257,35 @@ const REAL_ESTATE_ATTRIBUTES = {
 const REAL_ESTATE_CATEGORIES: Array<{
   slug: string;
   name: string;
+  nativeValue: string;
   attributeKeys: (keyof typeof REAL_ESTATE_ATTRIBUTES)[];
 }> = [
   {
     slug: "apartamento",
     name: "Apartamento",
+    nativeValue: "APARTMENT",
     attributeKeys: ["bedrooms", "bathrooms", "parkingSpaces", "areaSqm", "estrato"],
   },
   {
     slug: "casa",
     name: "Casa",
+    nativeValue: "HOUSE",
     attributeKeys: ["bedrooms", "bathrooms", "parkingSpaces", "areaSqm", "estrato"],
   },
-  { slug: "estudio", name: "Estudio", attributeKeys: ["bathrooms", "areaSqm"] },
+  { slug: "estudio", name: "Estudio", nativeValue: "STUDIO", attributeKeys: ["bathrooms", "areaSqm"] },
   {
     slug: "penthouse",
     name: "Penthouse",
+    nativeValue: "PENTHOUSE",
     attributeKeys: ["bedrooms", "bathrooms", "parkingSpaces", "areaSqm", "estrato"],
   },
-  { slug: "local-comercial", name: "Local comercial", attributeKeys: ["areaSqm", "parkingSpaces"] },
-  { slug: "lote", name: "Lote", attributeKeys: ["areaSqm"] },
+  {
+    slug: "local-comercial",
+    name: "Local comercial",
+    nativeValue: "COMMERCIAL",
+    attributeKeys: ["areaSqm", "parkingSpaces"],
+  },
+  { slug: "lote", name: "Lote", nativeValue: "LOT", attributeKeys: ["areaSqm"] },
 ];
 
 async function main() {
@@ -298,8 +307,13 @@ async function main() {
   for (const [index, categoryDef] of REAL_ESTATE_CATEGORIES.entries()) {
     const category = await prisma.category.upsert({
       where: { slug: categoryDef.slug },
-      update: {},
-      create: { slug: categoryDef.slug, name: categoryDef.name, sortOrder: index },
+      update: { nativeValue: categoryDef.nativeValue },
+      create: {
+        slug: categoryDef.slug,
+        name: categoryDef.name,
+        nativeValue: categoryDef.nativeValue,
+        sortOrder: index,
+      },
     });
 
     for (const [attrIndex, attrKey] of categoryDef.attributeKeys.entries()) {

@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { propertyTypeLabels } from "@/config/site";
 import { clsx } from "clsx";
 import type { LocalityWithNeighborhoods } from "@/repositories/property.repository";
+import type { findActiveTopLevelCategories } from "@/repositories/category.repository";
 
 const BEDROOM_OPTIONS = [
   { value: "", label: "Habitaciones" },
@@ -17,7 +17,16 @@ const BEDROOM_OPTIONS = [
   { value: "4", label: "4+" },
 ];
 
-export function PropertyFiltersBar({ filterOptions }: { filterOptions: LocalityWithNeighborhoods[] }) {
+export function PropertyFiltersBar({
+  filterOptions,
+  categories,
+}: {
+  filterOptions: LocalityWithNeighborhoods[];
+  /** Drives the type checkboxes below — see AttributeDefinition.nativeField
+   * for why this is the same Category data the sell form uses, not a
+   * separate hardcoded list. */
+  categories: Awaited<ReturnType<typeof findActiveTopLevelCategories>>;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -122,25 +131,27 @@ export function PropertyFiltersBar({ filterOptions }: { filterOptions: LocalityW
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {Object.entries(propertyTypeLabels).map(([value, label]) => {
-          const key = value.toLowerCase();
-          const isActive = propertyTypes.includes(key);
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => toggleType(key)}
-              className={clsx(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                isActive
-                  ? "border-brand-600 bg-brand-50 text-brand-700"
-                  : "border-ink-200 text-ink-600 hover:border-ink-300",
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
+        {categories
+          .filter((category) => category.nativeValue)
+          .map((category) => {
+            const key = category.nativeValue!.toLowerCase();
+            const isActive = propertyTypes.includes(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggleType(key)}
+                className={clsx(
+                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  isActive
+                    ? "border-brand-600 bg-brand-50 text-brand-700"
+                    : "border-ink-200 text-ink-600 hover:border-ink-300",
+                )}
+              >
+                {category.name}
+              </button>
+            );
+          })}
       </div>
     </div>
   );

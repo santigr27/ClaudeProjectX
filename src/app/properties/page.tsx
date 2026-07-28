@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getPropertyFilterOptions, getPropertySearchResults } from "@/features/properties/queries";
 import { getFavoritedIdsForCurrentSession } from "@/features/favorites/queries";
+import { findActiveTopLevelCategories } from "@/repositories/category.repository";
 import { PropertyFiltersBar } from "@/components/search/PropertyFiltersBar";
 import { PropertySearchExperience } from "@/components/search/PropertySearchExperience";
 import { propertySearchParamsSchema } from "@/validations/property-filters";
@@ -19,15 +20,16 @@ export default async function PropertiesPage({
   const parseResult = propertySearchParamsSchema.safeParse(rawSearchParams);
   const parsedParams = parseResult.success ? parseResult.data : {};
 
-  const [results, filterOptions, favoritedIds] = await Promise.all([
+  const [results, filterOptions, favoritedIds, categories] = await Promise.all([
     getPropertySearchResults(parsedParams),
     getPropertyFilterOptions(),
     getFavoritedIdsForCurrentSession(),
+    findActiveTopLevelCategories(),
   ]);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
-      <PropertyFiltersBar filterOptions={filterOptions} />
+      <PropertyFiltersBar filterOptions={filterOptions} categories={categories} />
       <PropertySearchExperience
         properties={results.properties}
         total={results.total}

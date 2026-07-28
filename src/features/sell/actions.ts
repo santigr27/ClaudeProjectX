@@ -7,7 +7,10 @@ import {
 } from "@/repositories/property-submission.repository";
 import { countImagesByPropertyId } from "@/repositories/property-image.repository";
 import { assertCanAddImages, saveImage, InvalidImageError } from "@/services/property-image.service";
+import { findCategoryByNativeValue } from "@/repositories/category.repository";
+import { upsertListingAttributeValue } from "@/repositories/listing-attribute-value.repository";
 import { sellPropertySchema, type SellPropertyInput } from "@/validations/sell";
+import type { AttributeDefinition } from "@/generated/prisma/client";
 
 export interface SellActionState {
   success?: boolean;
@@ -67,6 +70,52 @@ function extractImageFiles(formData: FormData): File[] {
     .filter((entry): entry is File => entry instanceof File && entry.size > 0);
 }
 
+/**
+ * Saves the category's custom (non-native) attributes for this listing —
+ * the true EAV path a new vertical (hardware, food, ...) would use, since
+ * real estate's fields (bedrooms, area, ...) all map onto native columns
+ * instead (see AttributeDefinition.nativeField and the sell form's
+ * category-driven field rendering). Every real-estate category has zero
+ * such attributes today, so this is a no-op for the live vertical until an
+ * admin adds one via /admin/categories.
+ */
+async function saveExtraAttributes(
+  listingId: string,
+  categoryPropertyType: string,
+  formData: FormData,
+): Promise<void> {
+  const category = await findCategoryByNativeValue(categoryPropertyType.toUpperCase());
+  if (!category) return;
+
+  const extraAttributes = category.attributes.filter(
+    (attribute: AttributeDefinition) => !attribute.nativeField,
+  );
+
+  await Promise.all(
+    extraAttributes.map(async (attribute: AttributeDefinition) => {
+      const fieldName = `attr_${attribute.key}`;
+
+      if (attribute.dataType === "MULTI_SELECT") {
+        const values = formData.getAll(fieldName).map(String).filter(Boolean);
+        if (values.length > 0) {
+          await upsertListingAttributeValue(listingId, attribute.id, values);
+        }
+        return;
+      }
+
+      if (attribute.dataType === "BOOLEAN") {
+        await upsertListingAttributeValue(listingId, attribute.id, formData.get(fieldName) != null);
+        return;
+      }
+
+      const raw = formData.get(fieldName);
+      if (raw === null || String(raw).trim() === "") return;
+      const value = attribute.dataType === "NUMBER" ? Number(raw) : String(raw);
+      await upsertListingAttributeValue(listingId, attribute.id, value);
+    }),
+  );
+}
+
 export async function submitPropertyAction(
   _prevState: SellActionState,
   formData: FormData,
@@ -97,7 +146,10 @@ export async function submitPropertyAction(
 
   try {
     const property = await createPropertySubmission(parsed.data, session.user.id);
-    await Promise.all(imageFiles.map((file, index) => saveImage(property.id, file, index)));
+    await Promise.all([
+      ...imageFiles.map((file, index) => saveImage(property.id, file, index)),
+      saveExtraAttributes(property.id, parsed.data.propertyType, formData),
+    ]);
     return { success: true, slug: property.slug };
   } catch {
     return { formError: "No pudimos enviar tu publicación. Inténtalo de nuevo." };
@@ -141,9 +193,10 @@ export async function updatePropertyAction(
     }
 
     const existingImageCount = await countImagesByPropertyId(propertyId);
-    await Promise.all(
-      imageFiles.map((file, index) => saveImage(property.id, file, existingImageCount + index)),
-    );
+    await Promise.all([
+      ...imageFiles.map((file, index) => saveImage(property.id, file, existingImageCount + index)),
+      saveExtraAttributes(property.id, parsed.data.propertyType, formData),
+    ]);
 
     return { success: true, slug: property.slug };
   } catch {
